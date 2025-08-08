@@ -1,0 +1,6 @@
+.fixed-preview {
+  width: 200px;     /* Fixed width */
+  height: 200px;    /* Fixed height */
+  object-fit: cover; /* Crop & center image without distortion */
+  border-radius: 8px; /* Optional: rounded corners */
+}
