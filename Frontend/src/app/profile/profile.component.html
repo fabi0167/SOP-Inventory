@@ -5,25 +5,31 @@
     <div class="col-md-3">
 
       <div class="card">
-        <ng-container *ngIf="selectedImagePreview || (user.profileImageUrl && user.profileImageUrl !== 'DELETE_IMAGE'); else defaultImage">
-    <img [src]="selectedImagePreview || user.profileImageUrl" class="card-img-top" alt="Profile Picture" />
-  </ng-container>
-  <ng-template #defaultImage>
-    <img src="https://r4pr9pzkx7.ufs.sh/f/aSsRCWKGHkXJaw33hAKGHkXJvNnjxy0BCLU61w7O4KPpV89R" class="card-img-top" alt="Default Profile Picture" />
-  </ng-template>
-  
-  <div class="card-body">
+        <div class="profile-pic-container">
+          <ng-container
+            *ngIf="selectedImagePreview || (user.profileImageUrl && user.profileImageUrl !== 'DELETE_IMAGE'); else defaultImage">
+            <img [src]="selectedImagePreview || user.profileImageUrl" class="profile-pic" alt="Profile Picture" />
+          </ng-container>
+          <ng-template #defaultImage>
+            <img src="https://r4pr9pzkx7.ufs.sh/f/aSsRCWKGHkXJaw33hAKGHkXJvNnjxy0BCLU61w7O4KPpV89R" class="profile-pic"
+              alt="Default Profile Picture" />
+          </ng-template>
+        </div>
+
+
+        <div class="card-body">
           <h4 class="card-title">Navn: {{ user.name }}</h4>
           <p class="card-text">Rolle: {{ user.userRole?.name }}</p>
-          
+
           <!-- Profile Image Upload Section -->
           <div class="form-group mt-3">
             <label for="profileImage">Skift Profilbillede:</label>
-            <input type="file" class="form-control-file" id="profileImage" accept="image/*" (change)="onImageSelected($event)"
-              [disabled]="isUploadingImage" />
-            
+            <input type="file" class="form-control-file" id="profileImage" accept="image/*"
+              (change)="onImageSelected($event)" [disabled]="isUploadingImage" />
+
             <!-- Reset Image Button (only show if user has an image) -->
-            <div *ngIf="selectedImagePreview || (user.profileImageUrl && user.profileImageUrl !== 'DELETE_IMAGE')" class="mt-2">
+            <div *ngIf="selectedImagePreview || (user.profileImageUrl && user.profileImageUrl !== 'DELETE_IMAGE')"
+              class="mt-2">
               <button type="button" class="btn btn-sm btn-warning" (click)="resetImage()">
                 Fjern billede
               </button>
