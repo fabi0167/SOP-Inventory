@@ -10,13 +10,12 @@
       </li>
 
       <!-- Dropdown menu only for users. -->
-      <li class="nav-item dropdown">
-        <!--Only accessable for users with RoleId 1 bcs that is admin-->
-        <a class="nav-link dropdown-toggle" *ngIf="
+      <li class="nav-item dropdown" *ngIf="
             currentUser?.role?.id === 1 ||
             currentUser?.role?.id === 2 ||
             currentUser?.role?.id === 4
-          " href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          ">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Brugere
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
@@ -32,103 +31,64 @@
       </li>
 
       <!-- Dropdown menu for Items. -->
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" *ngIf="
+      <li class="nav-item dropdown" *ngIf="
             currentUser?.role?.id === 1 ||
             currentUser?.role?.id === 4
-          " href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          ">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Inventar
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" *ngIf="
-              currentUser?.role?.id === 1 ||
-              currentUser?.role?.id === 4
-            " routerLink="/itemgroups">Genstands Grupper</a>
-
-          <a class="dropdown-item" *ngIf="
-              currentUser?.role?.id === 1 ||
-              currentUser?.role?.id === 4
-            " routerLink="/itemtype">Genstands Typer</a>
-
-          <a class="dropdown-item" *ngIf="
-              currentUser?.role?.id === 1 ||
-              currentUser?.role?.id === 4
-            " routerLink="/inventory">Inventar</a>
-
+          <a class="dropdown-item" routerLink="/itemgroups">Genstands Grupper</a>
+          <a class="dropdown-item" routerLink="/itemtype">Genstands Typer</a>
+          <a class="dropdown-item" routerLink="/inventory">Inventar</a>
           <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1" routerLink="/status">Status</a>
-
-          <a class="dropdown-item" *ngIf="
-              currentUser?.role?.id === 1 ||
-              currentUser?.role?.id === 4
-            " routerLink="/statushistory">Statushistorie</a>
+          <a class="dropdown-item" routerLink="/statushistory">Statushistorie</a>
         </div>
       </li>
 
       <!-- Dropdown menu for Computers. -->
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 2" href="#"
-          id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <li class="nav-item dropdown" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 2">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Computer
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 2"
-            routerLink="/computer">Computer</a>
-
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 2"
-            routerLink="/computerPart">Computer dele</a>
-
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 2"
-            routerLink="/partGroups">Del Grupper</a>
-
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 2"
-            routerLink="/part-type">Del Typer</a>
+          <a class="dropdown-item" routerLink="/computer">Computer</a>
+          <a class="dropdown-item" routerLink="/computerPart">Computer dele</a>
+          <a class="dropdown-item" routerLink="/partGroups">Del Grupper</a>
+          <a class="dropdown-item" routerLink="/part-type">Del Typer</a>
         </div>
       </li>
 
       <!-- Dropdown menu for Location. -->
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 4" href="#"
-          id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <li class="nav-item dropdown" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 4">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Lokation
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 4"
-            routerLink="/address">Adresser</a>
-
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 4"
-            routerLink="/buildings">Bygninger</a>
-
-          <a class="dropdown-item" *ngIf="currentUser?.role?.id === 1 || currentUser?.role?.id === 4"
-            routerLink="/room">Lokaler</a>
+          <a class="dropdown-item" routerLink="/address">Adresser</a>
+          <a class="dropdown-item" routerLink="/buildings">Bygninger</a>
+          <a class="dropdown-item" routerLink="/room">Lokaler</a>
         </div>
       </li>
 
       <!-- Dropdown menu for Loans. -->
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" *ngIf="
+      <li class="nav-item dropdown" *ngIf="
             currentUser?.role?.id === 1 ||
             currentUser?.role?.id === 2 ||
             currentUser?.role?.id === 4
-          " href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          ">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Lån
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" *ngIf="
-              currentUser?.role?.id === 1 ||
-              currentUser?.role?.id === 2 ||
-              currentUser?.role?.id === 4
-            " routerLink="/request">Anmod</a>
-
-          <a class="dropdown-item" *ngIf="
-              currentUser?.role?.id === 1 ||
-              currentUser?.role?.id === 2 ||
-              currentUser?.role?.id === 4
-            " routerLink="/loan">Udlån</a>
+          <a class="dropdown-item" routerLink="/request">Anmod</a>
+          <a class="dropdown-item" routerLink="/loan">Udlån</a>
         </div>
       </li>
 
-      <li class="nav-item">
-        <a class="nav-link" *ngIf="currentUser?.role?.id === 1" routerLink="/archive-menu">Arkiv</a>
+      <li class="nav-item" *ngIf="currentUser?.role?.id === 1">
+        <a class="nav-link" routerLink="/archive-menu">Arkiv</a>
       </li>
 
       <!--Logout BTN-->
