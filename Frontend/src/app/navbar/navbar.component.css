@@ -1,0 +1,94 @@
+nav {
+  background-color: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  font-size: 20px;
+  padding: 0.5rem 1rem;
+}
+
+/* Nav links should follow theme */
+.nav-link, 
+.navbar-light .navbar-nav .nav-link, 
+.nav-item {
+  color: var(--nav-text) !important;
+  transition: transform 0.2s ease-in-out;
+}
+
+.nav-link:hover {
+  transform: scale(1.1);
+  color: var(--brand) !important; /* highlight on hover */
+}
+
+/* Dropdown menu also adapts */
+.dropdown-menu {
+  background-color: var(--nav-bg);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.dropdown-item {
+  color: var(--nav-text);
+  transition: transform 0.2s ease-in-out;
+}
+
+.dropdown-item:hover {
+  background-color: var(--brand);
+  color: var(--brand-contrast);
+  transform: scale(1.1);
+}
+/* Toggle switch container */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+/* Hide the default checkbox */
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Slider track */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border);
+  transition: 0.4s;
+  border-radius: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Knob (with icon) */
+.icon {
+  position: absolute;
+  font-size: 16px;
+  color: var(--btn-text);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Position sun (light mode) */
+.theme-switch input:not(:checked) ~ .slider .icon {
+  transform: translateX(-12px);
+  opacity: 1;
+}
+
+/* Position moon (dark mode) */
+.theme-switch input:checked ~ .slider .icon {
+  transform: translateX(12px);
+  opacity: 1;
+}
+
+/* Track background changes on toggle */
+.theme-switch input:checked + .slider {
+  background-color: var(--brand);
+}
