@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ## Installation
 
 https://drive.google.com/drive/folders/1brfk49VT9s3ddkZC5ajIO7mSCrRjGOYk?usp=sharing
