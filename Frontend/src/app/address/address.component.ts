@@ -69,7 +69,7 @@ export class AddressComponent implements OnInit {
 
   // Load all addresses from the server
   loadAddresses(): void {
-    this.addressService.getAll().subscribe((data) => {
+    this.addressService.getAll().subscribe((data:any) => {
       this.addresses = data;
       this.filterAddresses();
     });
@@ -77,10 +77,10 @@ export class AddressComponent implements OnInit {
 
   getAllItems(): void {
     this.itemService.getAll().subscribe({
-      next: (items) => {
+      next: (items:any) => {
         this.items = items;
       },
-      error: (error) => {
+      error: (error:any) => {
         console.error('Error fetching items', error);
         this.handleError(error);
       },
@@ -125,7 +125,7 @@ export class AddressComponent implements OnInit {
         this.showSuccessMessage = true;
         setTimeout(() => (this.showSuccessMessage = false), 3000);
       },
-      (error) => {
+      (error:any) => {
         this.handleError(error);
       }
     );
@@ -141,7 +141,7 @@ export class AddressComponent implements OnInit {
           this.showSuccessMessage = true;
           setTimeout(() => (this.showSuccessMessage = false), 3000);
         },
-        (error) => {
+        (error:any) => {
           this.handleError(error);
         }
       );
@@ -166,7 +166,7 @@ export class AddressComponent implements OnInit {
 
     this.addressService.delete(addressId).subscribe({
       next: () => this.loadAddresses(),
-      error: (error) => this.handleError(error)
+      error: (error:any) => this.handleError(error)
     });
   }
 

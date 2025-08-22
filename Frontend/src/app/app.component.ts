@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { ThemeService } from './core/services/theme.service';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
-  standalone: true,
-  imports: [RouterModule]
+  imports: [RouterOutlet]
 })
 export class AppComponent {
-  title = 'SOP Inventar';
+  // Instantiating will initialize and apply from storage / OS
+  constructor(private theme: ThemeService) {}
 }

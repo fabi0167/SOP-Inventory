@@ -3,6 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { ThemeService } from '../core/services/theme.service';
 
 @Component({
   selector: 'app-navbar',
@@ -17,7 +18,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private sessionTimer: any;
   private authSub!: Subscription;
 
-  constructor(public authService: AuthService, private router: Router) { }
+  constructor(public authService: AuthService, private router: Router, public theme: ThemeService) { }
+
+  toggleTheme(){
+    this.theme.toggle();
+  }
+
+  get isDark() {
+    return this.theme.theme === 'dark';
+  }
+   get logoPath(): string {
+    return this.theme.theme === 'dark'
+      ? 'assets/logo white.png'
+      : 'assets/logo black.png';
+  }
 
   ngOnInit(): void {
     this.currentUser = JSON.parse(localStorage.getItem('currentUser') as string);
@@ -77,6 +91,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
       this.authService.logout();
       this.router.navigate(['/login']);
     }
+  }
+  goToInventory() {
+    this.router.navigate(['/inventory']);
   }
 
   ngOnDestroy(): void {

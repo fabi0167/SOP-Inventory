@@ -1,10 +1,115 @@
-body {
-    height: 100% !important;
-  }
-  
-  body {
-    -webkit-font-smoothing: antialiased !important;
-    font-family: Roboto, "Helvetica Neue", sans-serif !important;
-    background-color: #26422a !important;
-    color: #fafafa !important;
-  }
+:root {
+  /* Light theme (default) */
+  --bg: #ffffff;
+  --text: #111827;         /* neutral-900 */
+  --muted: #6b7280;        /* neutral-500 */
+  --surface: #f9fafb;      /* neutral-50 */
+  --border: #e5e7eb;       /* neutral-200 */
+  --brand: #2563eb;        /* blue-600 */
+  --brand-contrast: #ffffff;
+
+  --card-bg: var(--surface);
+  --nav-bg: #ffffff;
+  --nav-text: var(--text);
+  --btn-bg: var(--brand);
+  --btn-text: var(--brand-contrast);
+}
+
+/* === Dark theme tokens === */
+:root[data-theme="dark"] {
+  /* Page background (darkest layer) */
+  --bg: #0a0f1c;              /* deep navy */
+
+  /* Text */
+  --text: #e5e7eb;            /* light gray for readability */
+  --muted: #9ca3af;
+
+  /* Surfaces (slightly lighter than --bg for contrast) */
+  --surface: #111827;         /* slate-900 */
+  --card-bg: #1e293b;         /* slate-800, cards/panels */
+
+  /* Borders & accents */
+  --border: #1f2a44;
+
+  /* Brand */
+  --brand: #60a5fa;           /* blue-400 */
+  --brand-contrast: #0b1220;
+
+  /* Navbar */
+  --nav-bg: #1e293b;          /* near-black/navy */
+  --nav-text: #e5e7eb;
+
+  /* Buttons */
+  --btn-bg: var(--brand);
+  --btn-text: #0b1220;
+}
+
+/* === Force the page to actually use --bg in dark mode and neutralize light helpers === */
+
+/* Make sure the darkest background shows everywhere */
+:root,
+html,
+body,
+app-root {
+  background: var(--bg) !important;
+  background-color: var(--bg) !important; /* handle shorthand collisions */
+  color: var(--text);
+  min-height: 100%;
+}
+
+/* Let containers be transparent so the page bg shows through;
+   cards/tables already have their own themed backgrounds via --card-bg */
+.main,
+.content,
+.wrapper,
+.container,
+.container-fluid,
+.row,
+.col,
+section {
+  background-color: transparent !important;
+}
+
+/* If Bootstrap "light" helpers are used anywhere, neutralize them in dark mode */
+:root[data-theme="dark"] .bg-white,
+:root[data-theme="dark"] .bg-light,
+:root[data-theme="dark"] .shadow-sm.bg-white,
+:root[data-theme="dark"] .shadow-sm.bg-light {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Keep content surfaces readable in both themes */
+.card,
+.table,
+.list-group,
+.dropdown-menu {
+  background-color: var(--card-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Navbar should follow theme tokens you defined */
+.navbar {
+  background-color: var(--nav-bg) !important;
+  color: var(--nav-text) !important;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Links & buttons */
+a,
+.link,
+.btn-link {
+  color: var(--brand);
+}
+
+.btn-primary {
+  background-color: var(--btn-bg) !important;
+  color: var(--btn-text) !important;
+  border-color: var(--btn-bg) !important;
+}
+
+.btn-outline-primary {
+  color: var(--brand) !important;
+  border-color: var(--brand) !important;
+}

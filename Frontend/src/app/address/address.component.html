@@ -33,10 +33,10 @@
                   Rediger
                 </button>
                 <!--the span ? if true and : if false-->
-                <span [title]="isDeleteDisabled(address.id) ? 'På denne adresse er der genstande' : ''">
+                <span [title]="isDeleteDisabled(address.zipCode) ? 'På denne adresse er der genstande' : ''">
                   <button *ngIf="currentUser?.role?.id === 1" class="btn btn-danger btn-sm"
                     [disabled]="isDeleteDisabled(address.zipCode)"
-                    (click)="confirmDelete(address.id); $event.stopPropagation();">
+                    (click)="confirmDelete(address.zipCode); $event.stopPropagation();">
                     Slet
                   </button>
                 </span>
@@ -47,7 +47,7 @@
       </div>
 
       <!-- this is for the create form, when clicking it enables the form to be true -->
-      <button class="btn btn-success mb-4" (click)="showCreateForm = !showCreateForm">Opret</button>
+      <button class="btn btn-success" (click)="showCreateForm = !showCreateForm">Opret</button>
       <div *ngIf="showCreateForm">
         <h3>Tilføj Addresse</h3>
         <form (ngSubmit)="createAddress()">

@@ -34,6 +34,10 @@
   </ItemGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
+=======
+    <Folder Include="Migrations\" />
+>>>>>>> Joshi-branch
     <Folder Include="Repository\" />
   </ItemGroup>
 
