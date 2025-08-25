@@ -93,7 +93,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
   }
   goToInventory() {
-    this.router.navigate(['/inventory']);
+
+    if(this.currentUser?.role?.name === "Instruktør" || this.currentUser?.role?.name === "Elev"){
+      
+    } else {
+      this.router.navigate(['/inventory']);
+    }
   }
 
   ngOnDestroy(): void {
@@ -103,3 +108,4 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
   }
 }
+    

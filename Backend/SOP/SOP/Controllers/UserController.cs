@@ -7,6 +7,7 @@ using SOP.Archive.DTOs;
 using SOP.DTOs;
 using SOP.Encryption;
 using SOP.Entities;
+using SOP.Utils;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Reflection.Metadata;
@@ -35,6 +36,7 @@ namespace SOP.Controllers
         }
 
         [Authorize("Admin", "Drift", "Instruktør")]
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
@@ -221,8 +223,7 @@ namespace SOP.Controllers
             return $"data:image/png;base64,{Convert.ToBase64String(qrCodeBytes)}";
         }
 
-        //[Authorize("Admin", "Instruktør", "Drift","Elev")] --------
-        [AllowAnonymous]
+        [Authorize("Admin", "Instruktør", "Drift","Elev")]
         [HttpGet]
         [Route("GetUsersByRoleId/{Id}")]
         public async Task<IActionResult> GetUsersByRole([FromRoute] int Id)
@@ -253,6 +254,13 @@ namespace SOP.Controllers
         {
             try
             {
+                // ✅ Validate password before doing anything else
+                if (!PasswordValidation.IsPasswordValid(userRequest.Password, out string errorMessage))
+                {
+                    return BadRequest(new { message = errorMessage });
+                }
+
+
                 string salt = BCrypt.Net.BCrypt.GenerateSalt(10);
 
                 User newUser = new User
