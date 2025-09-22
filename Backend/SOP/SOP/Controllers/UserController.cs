@@ -56,6 +56,7 @@ namespace SOP.Controllers
         }
 
         [Authorize("Admin", "Instruktør", "Drift")]
+        [AllowAnonymous]
         [HttpGet]
         [Route("GetAllStudents")]
         public async Task<IActionResult> GetAllStudents()
@@ -88,6 +89,12 @@ namespace SOP.Controllers
                 if (user == null)
                 {
                     return NotFound(); //Status Code 404
+                }
+
+                // If user already has a secret, don't send anything sensitive
+                if (!string.IsNullOrEmpty(user.TwoFactorSecretKey))
+                {
+                    return Ok(new { twoFactorEnabled = true });
                 }
 
                 string secretKey = user.TwoFactorSecretKey;
