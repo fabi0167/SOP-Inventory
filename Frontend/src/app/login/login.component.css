@@ -1,0 +1,110 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+  max-width: 100%;
+  position: fixed;
+  inset: 0;
+  
+  background: linear-gradient(135deg, #e8ecf4 0%, #f1f5f9 50%, #f9fbff 100%);
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(255, 200, 200, 0.12), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(200, 220, 255, 0.18), transparent 55%),
+    linear-gradient(135deg, #e8ecf4 0%, #f1f5f9 50%, #f9fbff 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+.container.login .row {
+  width: 100%;
+  margin-left:17% ;     
+  margin-top: -5%;  
+
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  min-height: 410px;
+
+  border: 1px solid #e1e1e1;
+   
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12),
+              0 4px 16px rgba(0,0,0,0.08);
+    background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; 
+  border-radius: 15px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+
+.card-header{
+
+   padding: 24px 28px 8px;
+   border: none;
+  background: transparent;
+  align-items: center;
+  text-align: center;
+  border-radius: 15px 15px 0 0;
+}
+.card-header p{
+    font-size: 13px;
+}
+.logo{
+   width: 200px;
+  height: 100px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 18px;
+}
+.button {
+  padding: 5.5px 8px;
+  width: 90%;
+  border: none;
+     background-color: #272626ea;
+  color: #fff;
+  margin-top: 3%;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-left: 5%;
+  font-weight:600;
+
+     
+ 
+  transition:  0.3s;
+    
+}.button:hover {
+    background-color: #131212;
+    width: 50%;
+     margin-left: 25%;
+}
+.form-group input {
+   
+  border-bottom: 0.5px solid #000000;
+  border-radius: 5px;
+  padding: 8px 10px;
+  width: 90%;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+  margin-left: 5%;
+  outline: none;
+}
+.form-group input:focus{
+  outline: none;
+  border-bottom: 2px solid #0078d4; 
+    box-shadow: none;
+   
+}
+
+.form-group input::placeholder {
+  padding-left: 2%;   
+  color: #999;        
+  font-size: 14px;
+}
