@@ -75,7 +75,7 @@ namespace SOP.Controllers
             }
         }
 
-        [Authorize("Admin", "Instruktør", "Drift")]
+        //[Authorize("Admin", "Instruktør", "Drift")]
         [HttpPut]
         [Route("{Id}")]
         public async Task<IActionResult> UpdateByIdAsync([FromRoute] int Id, [FromBody] ItemRequest itemRequest)
@@ -139,6 +139,7 @@ namespace SOP.Controllers
                 RoomId = item.RoomId,
                 ItemGroupId = item.ItemGroupId,
                 SerialNumber = item.SerialNumber,
+                ItemImageUrl = item.ItemImageUrl
             };
             if (item.ItemGroup != null)
             {
@@ -237,6 +238,7 @@ namespace SOP.Controllers
                 RoomId = itemRequest.RoomId,
                 ItemGroupId = itemRequest.ItemGroupId,
                 SerialNumber = itemRequest.SerialNumber,
+                ItemImageUrl = itemRequest.ItemImageUrl,
             };
         }
     }

@@ -34,6 +34,7 @@ export class ItemDetailsComponent implements OnInit {
     roomId: 0,
     itemGroupId: 0,
     serialNumber: '',
+    itemImageUrl: '',
     statusHistories: [],
     itemGroup: {
       id: 0,
@@ -51,9 +52,9 @@ export class ItemDetailsComponent implements OnInit {
       building: {
         id: 0,
         buildingName: '',
-        addressId:0,
+        addressId: 0,
         buildingAddress: {
-          id:0,
+          id: 0,
           zipCode: 0,
           road: '',
           region: '',
@@ -119,6 +120,13 @@ export class ItemDetailsComponent implements OnInit {
   showEditModal: boolean = false;
   showQRCodeModal: boolean = false;
   showStatusModal: boolean = false;
+  collapsedLocation: boolean = true;
+
+  isUploadingImage: boolean = false;
+  selectedImagePreview: string | null = null;
+  selectedImage: File | null = null;
+  imageUpdated: boolean = false;
+  uploadError: boolean = false;
 
   statusCache = new Map<number, string>(); // Cache for status names
 
@@ -137,7 +145,7 @@ export class ItemDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     private sanitizer: DomSanitizer,
     private router: Router
-  ) {}
+  ) { }
 
   async ngOnInit(): Promise<void> {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -176,6 +184,11 @@ export class ItemDetailsComponent implements OnInit {
     });
   }
 
+
+  // Add method
+  toggleLocation() {
+    this.collapsedLocation = !this.collapsedLocation;
+  }
   // Method to get the specific item
   async fetchItem(id: number): Promise<void> {
     const data = await firstValueFrom(this.itemService.findById(id));
@@ -201,6 +214,61 @@ export class ItemDetailsComponent implements OnInit {
       }
     }
   }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedImage = input.files[0];
+
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.selectedImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(this.selectedImage);
+
+      // Reset upload states
+      this.imageUpdated = false;
+      this.uploadError = false;
+    }
+  }
+
+  uploadImageToCloudinaryAsync(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'SOP_ProfileImages');
+
+    const cloudName = 'dkrcapzct';
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+    return fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        return data.secure_url;
+      });
+  }
+
+  resetImage(): void {
+    this.selectedImagePreview = null;
+    this.selectedImage = null;
+
+    // Clear the file input
+    const fileInput = document.getElementById('itemImage') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+
+    this.imageUpdated = true; // Mark that image state has changed
+  }
+
 
   // Metode to get the specific user
   async fetchUser(id: number): Promise<void> {
@@ -271,30 +339,61 @@ export class ItemDetailsComponent implements OnInit {
   async editItem(): Promise<void> {
     if (!this.selectedItem) return;
 
-    console.log('Updating item:', this.selectedItem);
+    if (this.isUploadingImage) {
+      alert('Vent venligst på at billedet bliver uploadet...');
+      return;
+    }
 
-    // Update the item
-    this.itemService.update(this.selectedItem).subscribe(
-      async (response) => {
-        console.log('Item updated successfully:', response);
+    if (this.uploadError) {
+      alert('Der opstod en fejl ved upload af billede. Prøv igen.');
+      return;
+    }
 
-        const { id: itemId, itemGroup } = response;
-        const itemType = itemGroup?.itemType?.typeName;
+      // Upload new image if selected
+      if (this.selectedImage && !this.imageUpdated) {
 
-        this.closeEditModal();
-        this.selectedItem = {
-          id: 0,
-          roomId: 0,
-          itemGroupId: 0,
-          serialNumber: '',
-        };
-        this.ngOnInit();
-      },
-      (error) => {
-        console.error('Error updating item', error);
+        try {
+          this.isUploadingImage = true;
+          const imageUrl = await this.uploadImageToCloudinaryAsync(this.selectedImage);
+          this.selectedItem.itemImageUrl = imageUrl; // ✅ Assign URL
+          this.imageUpdated = true;
+          this.isUploadingImage = false;
+
+          
+        } catch (error) {
+          this.uploadError = true;
+          this.isUploadingImage = false;
+          alert('Upload til Cloudinary mislykkedes.');
+          return; // Stop saving if upload failed
+
+        }
+       
       }
-    );
+
+      // Remove image if user clicked reset
+      if (this.imageUpdated && !this.selectedImage && !this.selectedImagePreview) {
+        this.selectedItem.itemImageUrl = ''; // ✅ Clear image
+      }
+
+      console.log("AFTER CLICKED")
+      console.log(this.selectedItem)
+
+      // Call update API
+      this.itemService.update(this.selectedItem).subscribe({
+        next: (response) => {
+          this.closeEditModal();
+          this.selectedItem = { id: 0, roomId: 0, itemGroupId: 0, serialNumber: '', itemImageUrl: '' };
+          this.ngOnInit(); // Reload item list/details
+        },
+        error: (err) => {
+          console.error('Error updating item', err);
+        },
+      });
+
+
   }
+
+
 
   // Creates a new status history
   createStatusHistory(): void {
@@ -387,6 +486,20 @@ export class ItemDetailsComponent implements OnInit {
   // Open Edit modal with the selected item
   openEditModal(item: Item): void {
     this.selectedItem = { ...item };
+
+    // Initialize the image preview with the existing image
+    if (item.itemImageUrl) {
+      this.selectedImagePreview = item.itemImageUrl;
+    } else {
+      this.selectedImagePreview = null;
+    }
+
+
+    // Reset image-related flags
+    this.selectedImage = null;
+    this.imageUpdated = false;
+    this.uploadError = false;
+
     this.showEditModal = true;
   }
 

@@ -122,6 +122,15 @@ thead {
   font-size: 16px;
 }
 
+.item-image {
+  max-width: 200px;   /* restrict width */
+  max-height: 100px;  /* restrict height */
+  object-fit: cover; /* makes sure the image fits inside the box */
+  display: block;
+  margin: 0 auto;    /* center inside the table cell */
+}
+
+
 .inventartitle {
   display: flex;
   justify-content: space-between;

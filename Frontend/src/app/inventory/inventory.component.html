@@ -21,7 +21,7 @@
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" [value]="itemType.id"
                   [checked]="selectedItemTypes[itemType.id] || false" (change)="onChecked(itemType.id, $event)" />
-                <label>{{ itemType.typeName }}</label>
+                <label class="mb-4">{{ itemType.typeName }}</label>
               </div>
             </div>
           </div>
@@ -31,12 +31,12 @@
         <div class="card">
           <!-- This part is for the add item button and for the 1st searchbar. -->
           <div class="inventartitle">
-            <button type="button" class="btn btn-success" style="box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2)"
+            <button type="button" class="btn btn-success m-2" style="box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2)"
               (click)="openNewItemModal()">
               Ny Genstand
             </button>
           </div>
-          <div class="form-group">
+          <div class="form-group m-2">
             <h1 for="searchRoom" style="text-align: center">Søg Grupper:</h1>
             <input type="text" class="form-control" id="searchRoom" [(ngModel)]="searchItemGroup"
               (input)="updateDisplayedItems()" placeholder="Søg Grupper" />
@@ -55,19 +55,20 @@
 
           <!-- This part is for the items in the item groups. -->
           <div id="item-list" *ngIf="isVisible">
-            <button class="btn btn-primary" (click)="IsVisible()">
+            <button class="btn btn-primary ml-2" (click)="IsVisible()">
               Gå Tilbage
             </button>
             <h4><b>Genstand:</b></h4>
-            <div class="form-group">
+            <div class="form-group m-2">
               <h1 for="searchRoom" style="text-align: center"></h1>
               <input type="text" class="form-control" id="searchRoom" [(ngModel)]="searchItem" (input)="onItemSearch()"
                 placeholder="Søg Genstand" />
             </div>
             <div class="table-responsive">
-              <table>
+              <table class="text-dark">
                 <thead>
                   <tr>
+                    <th>Billede</th>
                     <th>Serienummer</th>
                     <th>Genstandsgruppe</th>
                     <th>Adresse</th>
@@ -79,6 +80,14 @@
                 </thead>
                 <tbody>
                   <tr *ngFor="let item of filteredItems" (click)="onLineClick(item, $event)">
+                    <td>
+                      <ng-container *ngIf="item.itemImageUrl; else noImage">
+                        <img [src]="item.itemImageUrl" alt="Billede af genstand" class="item-image" />
+                      </ng-container>
+                      <ng-template #noImage>
+                        <span class="no-image-text">Intet billede fundet</span>
+                      </ng-template>
+                    </td>
                     <td (click)="onLineClick(item, $event)">
                       {{ item.serialNumber }}
                     </td>
@@ -156,6 +165,26 @@
         <input type="text" class="form-control" id="serialNumber" [(ngModel)]="newItem.serialNumber"
           name="serialNumber" />
       </div>
+
+      <div class="form-group">
+        <label for="itemImage">Brugerbillede:</label>
+        <input type="file" class="form-control" id="userImage" accept="image/*" (change)="onImageSelected($event)"
+          [disabled]="isUploadingImage" />
+
+        <!-- Preview selected image -->
+        <div *ngIf="selectedImagePreview" class="mt-2">
+          <label>Forhåndsvisning: </label>
+          <img [src]="selectedImagePreview" class="img-thumbnail fixed-preview ml-2" style="max-height: 150px;" />
+
+          <!-- Reset/Delete Image Button -->
+          <div class="mt-2 mb-4">
+            <button type="button" class="btn btn-sm btn-warning" (click)="resetImage()">
+              Fjern billede
+            </button>
+          </div>
+        </div>
+      </div>
+
       <button type="submit" class="btn btn-success">Opret</button>
       <button type="button" class="btn btn-secondary" (click)="closeNewItemModal()">
         Cancel
@@ -193,6 +222,26 @@
         <input type="text" class="form-control" id="editSerialNumber" [(ngModel)]="selectedItem.serialNumber"
           name="editSerialNumber" />
       </div>
+
+      <div class="form-group">
+        <label for="userImage">Brugerbillede:</label>
+        <input type="file" class="form-control" id="userImage" accept="image/*" (change)="onImageSelected($event)"
+          [disabled]="isUploadingImage" />
+
+        <!-- Preview selected image -->
+        <div *ngIf="selectedImagePreview" class="mt-2">
+          <label>Forhåndsvisning: </label>
+          <img [src]="selectedImagePreview" class="img-thumbnail fixed-preview ml-2" style="max-height: 150px;" />
+
+          <!-- Reset/Delete Image Button -->
+          <div class="mt-2 mb-4">
+            <button type="button" class="btn btn-sm btn-warning" (click)="resetImage()">
+              Fjern billede
+            </button>
+          </div>
+        </div>
+      </div>
+
       <button type="submit" class="btn btn-primary">Gem</button>
       <button type="button" class="btn btn-secondary" (click)="closeEditItemModal()">
         Cancel

@@ -74,6 +74,7 @@ namespace SOP.Repositories
                 item.ItemGroupId = updateItem.ItemGroupId;
                 item.RoomId = updateItem.RoomId;
                 item.SerialNumber = updateItem.SerialNumber;
+                item.ItemImageUrl = updateItem.ItemImageUrl;
                 await _context.SaveChangesAsync();
                 item = await FindByIdAsync(itemId);
             }

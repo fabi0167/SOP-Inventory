@@ -1,4 +1,6 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+
+  
+  import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { NavbarComponent } from '../navbar/navbar.component';
@@ -35,6 +37,8 @@ export class InventoryComponent implements OnInit {
     roomId: 0,
     itemGroupId: 0,
     serialNumber: '',
+    itemImageUrl: ''
+
   };
 
   checkedItemGroup: ItemGroup = {
@@ -56,6 +60,7 @@ export class InventoryComponent implements OnInit {
     roomId: 0,
     itemGroupId: 0,
     serialNumber: '',
+    itemImageUrl: ''
   };
 
   selectedItemGroup: ItemGroup = {
@@ -95,6 +100,13 @@ export class InventoryComponent implements OnInit {
   archiveNote: string = '';
   showErrorNote: boolean = false;
   showArchiveModal: boolean = false;
+
+  selectedImage: File | null = null;
+  selectedImagePreview: string | null = null;
+  isUploadingImage: boolean = false;
+  imageUpdated: boolean = false;
+  uploadError: boolean = false;
+
 
   constructor(
     private itemService: ItemService,
@@ -174,6 +186,54 @@ export class InventoryComponent implements OnInit {
     return building ? building.buildingName : 'Bygning ikke fundet';
   }
 
+  //Image methods
+  resetImage() {
+    this.selectedImagePreview = null;
+    (document.getElementById('itemImage') as HTMLInputElement).value = '';
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedImage = input.files[0];
+
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.selectedImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(this.selectedImage);
+
+      // Reset upload states
+      this.imageUpdated = false;
+      this.uploadError = false;
+    }
+  }
+
+
+  uploadImageToCloudinaryAsync(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'SOP_ProfileImages');
+
+    const cloudName = 'dkrcapzct';
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+    return fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        return data.secure_url;
+      });
+  }
+
   // Helper method for address
   getAddressInfo(roomId: number): string {
     if (!roomId) return 'Ikke angivet';
@@ -184,7 +244,8 @@ export class InventoryComponent implements OnInit {
     const building = this.buildings.find((b) => b.id === room.buildingId);
     if (!building) return 'Adresse ikke fundet';
 
-    const address = this.addresses.find((a) => a.zipCode === building.addressId); //TEST
+    const address = this.addresses.find((a) => a.id === building.buildingAddress?.id); //TEST
+
     return address ? address.road : 'Adresse ikke fundet';
   }
 
@@ -285,21 +346,36 @@ export class InventoryComponent implements OnInit {
   // Create, update and delete metodes
   // ============================
 
+
+
   // Creates new item
   async createNewItem(): Promise<void> {
     try {
+
+
+      // If an image is selected, upload it first
+      if (this.selectedImage) {
+        this.isUploadingImage = true;
+        this.newItem.itemImageUrl = await this.uploadImageToCloudinaryAsync(this.selectedImage);
+        this.isUploadingImage = false;
+      }
+
+
       // Call the item service to create a new item and wait for the response
-      const response = await this.itemService.create(this.newItem).toPromise();
+      await this.itemService.create(this.newItem).toPromise();
 
       // Close the modal for creating new items
       this.closeNewItemModal();
 
       // Reset the newItem object to its default state for future use
-      this.newItem = { id: 0, itemGroupId: 0, roomId: 0, serialNumber: '' };
+      this.newItem = { id: 0, itemGroupId: 0, roomId: 0, serialNumber: '', itemImageUrl: '' };
+      this.selectedImage = null;
+      this.selectedImagePreview = null;
 
       // Reload the entire page to reflect changes
       window.location.reload();
     } catch (error) {
+      this.isUploadingImage = false;
       // Log any errors encountered during the item creation process
       console.error('Error creating item type', error);
     }
@@ -326,6 +402,7 @@ export class InventoryComponent implements OnInit {
           roomId: 0,
           itemGroupId: 0,
           serialNumber: '',
+          itemImageUrl: ''
         };
 
         // Reload the page to reflect the changes (Consider updating the UI dynamically instead)
@@ -337,6 +414,8 @@ export class InventoryComponent implements OnInit {
       }
     );
   }
+
+
 
   // ==========================
   // Open and close models and reroute
@@ -357,9 +436,31 @@ export class InventoryComponent implements OnInit {
     this.showModal = false;
   }
 
-  // Open Edit Modal and set the selectedItem
+  // Fix the openEditItemModal method
   openEditItemModal(item: Item): void {
     this.selectedItem = { ...item };
+
+    // Debug: Log the item to see what properties it actually has
+    console.log('Item object:', item);
+    console.log('Item image URL:', item.itemImageUrl);
+
+    // Try both possible property names to be safe
+    const imageUrl = item.itemImageUrl || item.itemImageUrl || '';
+
+    // If the item has an existing image, set it as the preview
+    if (imageUrl && imageUrl.trim() !== '') {
+      this.selectedImagePreview = imageUrl;
+      console.log('Setting image preview to:', imageUrl);
+    } else {
+      this.selectedImagePreview = null;
+      console.log('No image URL found');
+    }
+
+    // Reset the file input and selected image since we're showing existing image
+    this.selectedImage = null;
+    this.imageUpdated = false;
+    this.uploadError = false;
+
     this.showEditModal = true;
   }
 
@@ -371,7 +472,22 @@ export class InventoryComponent implements OnInit {
       roomId: 0,
       itemGroupId: 0,
       serialNumber: '',
+      itemImageUrl: ''
     };
+
+    // Reset image-related properties
+    this.selectedImage = null;
+    this.selectedImagePreview = null;
+    this.imageUpdated = false;
+    this.uploadError = false;
+
+    // Reset the file input
+    const fileInput = document.getElementById('editItemImage') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+
+
   }
 
 
@@ -418,3 +534,23 @@ export class InventoryComponent implements OnInit {
     this.showErrorNote = false;
   }
 }
+
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
