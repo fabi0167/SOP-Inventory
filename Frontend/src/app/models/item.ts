@@ -8,6 +8,7 @@ export interface Item {
   itemGroupId: number;
   serialNumber: string;
   itemImageUrl?: string;
+  itemInfo?:string;
   statusHistories?: StatusHistory[];
   itemGroup?: ItemGroup;
   room?: Room;

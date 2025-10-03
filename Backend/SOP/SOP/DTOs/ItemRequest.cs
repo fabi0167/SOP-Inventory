@@ -13,5 +13,8 @@
         public string SerialNumber { get; set; }
 
         public string? ItemImageUrl { get; set; }
+
+        public string? ItemInfo { get; set; }
+
     }
 }

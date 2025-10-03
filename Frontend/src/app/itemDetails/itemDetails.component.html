@@ -4,6 +4,8 @@
 
   <!-- Action Buttons -->
   <div class="action-buttons" style="margin-bottom: 1rem;">
+    <button class="btn btn-secondary" (click)="goBack()">← Tilbage</button>
+
     <button class="btn btn-success floatingbtn" (click)="makeQRCode()">Generer QR kode</button>
     <button class="btn btn-success floatingbtn" (click)="openStatusModal()">Tilføj ny status</button>
     <button class="btn btn-primary floatingbtn" (click)="openEditModal(this.item)">Rediger genstand</button>
@@ -40,22 +42,20 @@
     <p><strong>Note:</strong> {{ currentStatusHistory.note }}</p>
   </div>
 
-  <!-- Item Group -->
-  <div *ngIf="item.itemGroup" class="item-group-section">
+  <!-- Item Info -->
+<div *ngIf="itemInfoObj && (objectKeys(itemInfoObj).length > 0)" class="item-group-section">
     <div (click)="toggleItemGroup()" class="toggleCollapse">
       <h2>
-        Genstandsgruppe
+        Item Information
         <span *ngIf="!collapsedItemGroup">&#x25B2;</span>
         <span *ngIf="collapsedItemGroup">&#x25BC;</span>
         <hr />
       </h2>
     </div>
     <div *ngIf="!collapsedItemGroup" class="collapsible-content">
-      <p><strong>Modelnavn:</strong> {{ item.itemGroup.modelName }}</p>
-      <p><strong>Fabrikant:</strong> {{ item.itemGroup.manufacturer }}</p>
-      <p><strong>Pris:</strong> {{ item.itemGroup.price }} DKK</p>
-      <p><strong>Garantiperiode:</strong> {{ item.itemGroup.warrantyPeriod }}</p>
-      <p><strong>Antal:</strong> {{ item.itemGroup.quantity }}</p>
+      <div *ngFor="let key of objectKeys(itemInfoObj)">
+          <p><strong>{{ key }}:</strong> {{ itemInfoObj[key] }}</p>
+        </div>
     </div>
   </div>
 

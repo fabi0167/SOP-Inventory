@@ -1,6 +1,4 @@
-
-  
-  import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { NavbarComponent } from '../navbar/navbar.component';
@@ -17,6 +15,8 @@ import { Building } from '../models/building';
 import { Address } from '../models/address';
 import { BuildingService } from '../services/building.service';
 import { AddressService } from '../services/address.service';
+import { PresetService } from '../services/preset.servive';
+import { Preset } from '../models/preset';
 
 @Component({
   selector: 'app-inventory',
@@ -27,7 +27,7 @@ import { AddressService } from '../services/address.service';
 })
 export class InventoryComponent implements OnInit {
   itemTypes: ItemType[] = [];
-  itemType: ItemType = { id: 0, typeName: '' };
+  itemType: ItemType = { id: 0, typeName: '', presetId: 0 };
   selectedItemTypes: { [key: number]: boolean } = {};
 
   items: Item[] = [];
@@ -52,6 +52,7 @@ export class InventoryComponent implements OnInit {
     itemType: {
       id: 0,
       typeName: '',
+      presetId: 0
     },
   };
 
@@ -74,6 +75,7 @@ export class InventoryComponent implements OnInit {
     itemType: {
       id: 0,
       typeName: '',
+      presetId: 0
     },
   };
 
@@ -107,6 +109,21 @@ export class InventoryComponent implements OnInit {
   imageUpdated: boolean = false;
   uploadError: boolean = false;
 
+  showInfoModal: boolean = false;
+
+
+  // holds the selected itemGroup object (not just the id)
+  selectedItemGroupObj: ItemGroup | null = null;
+
+  // preset UI helpers
+  presetJsonString: string = '';
+  showRawPreset = false;
+
+
+  presets: any[] = [];
+  selectedPresetData: any = null;
+  presetFields: { [key: string]: any } = {}; // Store user input for preset fields
+  objectKeys = Object.keys;
 
   constructor(
     private itemService: ItemService,
@@ -116,7 +133,9 @@ export class InventoryComponent implements OnInit {
     private router: Router,
     private roomService: RoomService,
     private buildingService: BuildingService,
-    private addressService: AddressService
+    private addressService: AddressService,
+    private presetService: PresetService // Add this
+
   ) { }
 
   ngOnInit(): void {
@@ -129,6 +148,63 @@ export class InventoryComponent implements OnInit {
     this.getBuildings();
     this.getAddresses();
   }
+
+
+  onItemGroupChange() {
+    console.log("Item Group Changed");
+
+    const groupId = +this.newItem.itemGroupId; // convert to number
+
+    const selectedGroup = this.itemGroups.find(ig => ig.id === groupId);
+
+    console.log(selectedGroup)
+    console.log(this.itemGroups)
+    if (selectedGroup && selectedGroup.itemType) {
+          console.log("Item Type:", selectedGroup.itemType);
+        const presetId = selectedGroup.itemType.presetId;
+        
+        if (presetId && presetId > 0) {
+          // Fetch preset data based on presetId
+          this.fetchPresetData(presetId);
+        } else {
+          // No preset for this item type
+          this.selectedPresetData = null;
+          this.presetFields = {};
+        }
+      }
+    
+
+  }
+
+
+  fetchPresetData(presetId: number): void {
+    this.presetService.findById(presetId).subscribe(
+      (preset) => {
+        console.log("Fetched Preset:", preset);
+        this.selectedPresetData = preset;
+        
+        // Initialize preset fields with empty values for user input
+        this.presetFields = {};
+        if (preset) {
+          Object.keys(preset).forEach(key => {
+            // Skip id and other metadata fields
+            if (key !== 'id' && key !== 'presetId') {
+              this.presetFields[key] = '';
+            }
+          });
+        }
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        console.error('Error fetching preset data:', error);
+        this.selectedPresetData = null;
+        this.presetFields = {};
+      }
+    );
+  }
+
+
+
 
   // ============================
   // Fetch data from database
@@ -416,6 +492,10 @@ export class InventoryComponent implements OnInit {
   }
 
 
+  showInformation(): void {
+    this.showInfoModal = !this.showInfoModal;
+  }
+
 
   // ==========================
   // Open and close models and reroute
@@ -539,18 +619,18 @@ export class InventoryComponent implements OnInit {
 
 
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

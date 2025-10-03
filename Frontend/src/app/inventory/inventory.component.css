@@ -185,11 +185,15 @@ thead {
 }
 
 .modal-content {
-  background-color: #fff;
+  background-color: var(--card-bg);
+  color: var(--text);
+
   padding: 20px;
   border-radius: 5px;
   max-width: 500px;
   position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+
 }
 
 
@@ -212,4 +216,30 @@ thead {
     font-size: 12px;
     padding: 5px; 
   }
+}
+
+
+.themed-modal {
+  background-color: #d6e3f8; /* same as main page */
+  color: black;
+  padding: 20px;
+  border-radius: 5px;
+  max-width: 600px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.themed-modal input,
+.themed-modal select {
+  background-color: #f9f9f9;
+  color: black;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+.themed-modal label {
+  font-weight: bold;
+  color: #333;
 }

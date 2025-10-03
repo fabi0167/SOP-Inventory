@@ -54,7 +54,7 @@ namespace SOP.Controllers
             }
         }
 
-        [Authorize("Admin", "Instruktør", "Drift")]
+        //[Authorize("Admin", "Instruktør", "Drift")]
         [HttpGet]
         [Route("{Id}")]
         public async Task<IActionResult> FindByIdAsync([FromRoute] int Id)
@@ -139,7 +139,8 @@ namespace SOP.Controllers
                 RoomId = item.RoomId,
                 ItemGroupId = item.ItemGroupId,
                 SerialNumber = item.SerialNumber,
-                ItemImageUrl = item.ItemImageUrl
+                ItemImageUrl = item.ItemImageUrl,
+                ItemInfo = item.ItemInfo
             };
             if (item.ItemGroup != null)
             {
@@ -239,6 +240,7 @@ namespace SOP.Controllers
                 ItemGroupId = itemRequest.ItemGroupId,
                 SerialNumber = itemRequest.SerialNumber,
                 ItemImageUrl = itemRequest.ItemImageUrl,
+                ItemInfo = itemRequest.ItemInfo,
             };
         }
     }

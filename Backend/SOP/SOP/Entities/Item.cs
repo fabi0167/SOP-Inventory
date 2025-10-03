@@ -20,6 +20,9 @@ namespace SOP.Entities
         [Column(TypeName = "nvarchar(512)")]
         public string? ItemImageUrl { get; set; }
 
+        [Column(TypeName = "nvarchar(max)")]
+        public string? ItemInfo { get; set; }
+
         public List<StatusHistory> StatusHistories { get; set; }
 
         public ItemGroup ItemGroup { get; set; }
