@@ -131,29 +131,89 @@
   <div class="modal-content">
     <span class="close" (click)="closeEditModal()">&times;</span>
     <h2>Rediger genstand</h2>
+
     <form (ngSubmit)="editItem()">
-      <div class="form-group">
-        <label for="editItemGroupId">Genstandsgruppe</label>
-        <select class="form-control p-2" id="editItemGroupId" [(ngModel)]="selectedItem.itemGroupId"
-          name="editItemGroupId" required>
-          <option *ngFor="let itemGroup of itemGroups" [value]="itemGroup.id">
-            {{ itemGroup.modelName }}
-          </option>
-        </select>
+
+      <!-- ─── Top row: 3 fields side-by-side ─────────────────────────────── -->
+      <div class="row g-2">
+        <!-- Genstandsgruppe -->
+        <div class="form-group col-12 col-md-4">
+          <label for="itemGroupId">Genstandsgruppe</label>
+          <select
+            class="form-control"
+            id="itemGroupId"
+            [(ngModel)]="newItem.itemGroupId"
+            name="itemGroupId"
+            required
+            (change)="onItemGroupChange()">
+            <option *ngFor="let itemGroup of itemGroups" [value]="itemGroup.id">
+              {{ itemGroup.modelName }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Lokale -->
+        <div class="form-group col-12 col-md-4">
+          <label for="editRoomId">Lokale</label>
+          <select
+            class="form-control p-2"
+            id="editRoomId"
+            [(ngModel)]="selectedItem.roomId"
+            name="editRoomId"
+            required>
+            <option *ngFor="let room of rooms" [value]="room.id">
+              {{ room.roomNumber }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Serienummer -->
+        <div class="form-group col-12 col-md-4">
+          <label for="editSerialNumber">Serienummer</label>
+          <input
+            type="text"
+            class="form-control"
+            id="editSerialNumber"
+            [(ngModel)]="selectedItem.serialNumber"
+            name="editSerialNumber" />
+        </div>
       </div>
-      <div class="form-group">
-        <label for="editRoomId">Lokale</label>
-        <select class="form-control p-2" id="editRoomId" [(ngModel)]="selectedItem.roomId" name="editRoomId" required>
-          <option *ngFor="let room of rooms" [value]="room.id">
-            {{ room.roomNumber }}
-          </option>
-        </select>
+
+      <!-- ─── Item Details (3 per row) ────────────────────────────────────── -->
+      <div *ngIf="newItem?.itemGroupId && selectedPresetData" class="preset-fields-container mt-3">
+        <h5>Genstand Detaljer:</h5>
+        <div class="row">
+          <div
+            *ngFor="let key of objectKeys(selectedPresetData)"
+            class="form-group col-12 col-md-4 d-flex align-items-center mb-2 details-field">
+            <!-- Checkbox -->
+            <input
+              type="checkbox"
+              [id]="'skip-' + key"
+              [(ngModel)]="enabledFields[key]"
+              (change)="toggleField(key)"
+              [name]="'skip-' + key"
+              class="mr-2" />
+
+            <!-- Label -->
+            <label
+              [for]="'skip-' + key"
+              class="mb-0 mr-2 details-label">
+              {{ key }}
+            </label>
+
+            <!-- Input Field -->
+            <input
+              [type]="getInputType(selectedPresetData[key])"
+              class="form-control details-input"
+              [id]="key"
+              [(ngModel)]="itemInfoObj[key]"
+              [name]="key"
+              [disabled]="!enabledFields[key]" />
+          </div>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="editSerialNumber">Serienummer</label>
-        <input type="text" class="form-control" id="editSerialNumber" [(ngModel)]="selectedItem.serialNumber"
-          name="editSerialNumber" />
-      </div>
+
 
       <div class="form-group">
         <label for="itemImage">Genstandbillede:</label>

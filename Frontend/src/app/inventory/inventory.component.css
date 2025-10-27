@@ -184,6 +184,8 @@ thead {
   color: black;
 }
 
+
+
 .modal-content {
   background-color: var(--card-bg);
   color: var(--text);
@@ -203,6 +205,19 @@ thead {
   right: 10px;
   font-size: 24px;
   cursor: pointer;
+  color: var(--closeBtncolor) !important;  /* black in light, white in dark from your vars */
+  opacity: 1 !important;                   /* kill Bootstrap’s 0.5 opacity */
+  filter: none;                            /* just in case a filter is applied by a theme */
+  transition: transform 0.2s ease, text-shadow 0.2s ease;
+}
+
+.close:hover,
+.close:focus {
+  color: var(--closeBtncolor) !important;
+  opacity: 1 !important;
+  text-decoration: none;   
+  transform: scale(1.2);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);                /* avoid underline from link resets */
 }
 
 @media (max-width: 768px) {
@@ -243,3 +258,80 @@ thead {
   font-weight: bold;
   color: #333;
 }
+
+.nyGenstandBoks{
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: black;
+
+}
+
+.nyGenstandboks-content{
+  background-color: var(--card-bg);
+  color: var(--text);
+
+  padding: 25px;
+  border-radius: 5px;
+  width: 700px;
+  position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 16px; /* row gap / column gap */
+  margin-top: 10px;
+}
+
+.details-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background-color: rgba(255,255,255,0.05);
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.details-grid label {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.details-grid input[type="text"],
+.details-grid input[type="number"],
+.details-grid input[type="file"] {
+  width: 100%;
+}
+
+.label-with-checkbox {
+  display: inline-flex;     /* shrink-to-fit row */
+  align-items: center;
+  gap: 6px;                 /* tiny space between name and checkbox */
+  white-space: nowrap;      /* keep on one line */
+  width: auto;              /* override any 100% width */
+  justify-content: flex-start; /* ensure it doesn't spread */
+}
+
+.label-with-checkbox label {
+  margin: 0;                /* kill default bottom margin */
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.label-with-checkbox input[type="checkbox"] {
+  width: auto;              /* override the global 100% */
+  margin: 0;
+  transform: translateY(1px);  /* small optical nudge */
+  accent-color: var(--brand);
+}
+

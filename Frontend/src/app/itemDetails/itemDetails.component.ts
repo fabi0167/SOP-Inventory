@@ -19,6 +19,9 @@ import { ItemGroupService } from '../services/itemGroup.service';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 import { Room } from '../models/room';
 import { ItemGroup } from '../models/itemGroup';
+import { PresetService } from '../services/preset.servive';
+import { Preset } from '../models/preset';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-itemDetails',
@@ -70,6 +73,14 @@ export class ItemDetailsComponent implements OnInit {
       loanDate: new Date(),
       returnDate: new Date(),
     },
+  };
+  newItem: Item = {
+    id: 0,
+    roomId: 0,
+    itemGroupId: 0,
+    serialNumber: '',
+    itemImageUrl: '',
+    itemInfo:''
   };
 
   itemType: ItemType = { id: 0, typeName: '', presetId: 0 };
@@ -135,6 +146,11 @@ export class ItemDetailsComponent implements OnInit {
   qrCodeStyle: SafeStyle | undefined;
   qrCodeUrl: string = ''; // Raw QR code URL
   inputUrl: string = ''; // User input URL
+  selectedPresetData: any = {}; // Preset data for the selected item type
+
+  // Field management
+  enabledFields: { [key: string]: boolean } = {}; // Track enabled/disabled fields
+  // Parsed itemInfo object
 
   itemInfoObj: any = {};
   objectKeys = Object.keys;
@@ -150,7 +166,8 @@ export class ItemDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     private sanitizer: DomSanitizer,
     private router: Router,
-    private location: Location
+    private location: Location,
+    private presetService: PresetService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -166,7 +183,51 @@ export class ItemDetailsComponent implements OnInit {
       await this.fetchUser(this.item.loan?.userId);
     }
   }
+  getInputType(type: string): string {
+    if (!type) return 'text';
+    type = type.toLowerCase();
 
+    if (type.includes('bool')) return 'checkbox';
+    if (type.includes('int') || type.includes('decimal') || type.includes('number')) return 'number';
+    return 'text';
+  }
+  onItemGroupChange() {
+      const groupId = +this.newItem.itemGroupId; // convert to number
+  
+      const selectedGroup = this.itemGroups.find(ig => ig.id === groupId);
+  
+      const presetId = selectedGroup?.itemType?.presetId;
+  
+      if (!presetId) {
+        this.selectedPresetData = null;
+        return;
+      }
+  
+      // 👇 use your PresetService to get the preset data
+      this.presetService.findById(presetId).subscribe({
+        next: (preset: Preset) => {
+          try {
+            this.selectedPresetData = JSON.parse(preset.data);
+            console.log(this.selectedPresetData)
+  
+            this.itemInfoObj = {};
+            this.enabledFields = {};
+            for (const key of Object.keys(this.selectedPresetData)) {
+              this.itemInfoObj[key] = null;
+              this.enabledFields[key] = true;
+            }
+          } catch (e) {
+            console.error('Invalid preset JSON', e);
+            this.selectedPresetData = null;
+          }
+        },
+        error: (err: HttpErrorResponse) => {
+          console.error('Failed to fetch preset', err);
+          this.selectedPresetData = null;
+        },
+      });
+    }
+  
 
   goBack(): void {
     this.location.back();
@@ -580,4 +641,9 @@ export class ItemDetailsComponent implements OnInit {
   addPartToThisComputer(Id: number): void {
     this.router.navigate(['/computer']);
   }
+  toggleField(key: string) {
+  if (!this.enabledFields[key]) {
+    this.itemInfoObj[key] = null;
+  }
+}
 }
