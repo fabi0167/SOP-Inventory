@@ -273,9 +273,12 @@
 </div>
 
 
-<!-- New Item Modal -->
-<div class="modal" *ngIf="showModal">
-  <div class="modal-content">
+
+
+
+<!-- New Genstandboks -->
+<div class="nyGenstandBoks" *ngIf="showModal">
+  <div class="nyGenstandboks-content">
     <span class="close" (click)="closeNewItemModal()">&times;</span>
     <h2>Ny Genstand</h2>
     <form (ngSubmit)="createNewItem()">
@@ -310,20 +313,21 @@
       <div *ngIf="selectedPresetData" class="preset-fields-container mt-3">
         <h5>Genstand Detaljer:</h5>
 
-        <div *ngFor="let key of objectKeys(selectedPresetData)" class="form-group d-flex align-items-center mb-2">
-          <!-- Skip Checkbox -->
-          <input type="checkbox" [id]="'skip-' + key" [(ngModel)]="enabledFields[key]" (change)="toggleField(key)"
-            [name]="'skip-' + key" class="mr-2" />
-          <label [for]="'skip-' + key" class="mb-0 mr-3" style="min-width: 120px;">
-            {{ key }}
-          </label>
+        <div class="details-grid">
+          <div *ngFor="let key of objectKeys(selectedPresetData)" class="form-group">
+            <div class="label-with-checkbox">
+              <label [for]="'skip-' + key">{{ key }}</label>
+              <input type="checkbox" [id]="'skip-' + key" [(ngModel)]="enabledFields[key]" (change)="toggleField(key)"
+                [name]="'skip-' + key" />
+            </div>
 
-          <!-- Input Field -->
-          <input [type]="getInputType(selectedPresetData[key])" class="form-control flex-grow-1" [id]="key"
-            [(ngModel)]="itemInfoObj[key]" [name]="key" [disabled]="!enabledFields[key]"
-            [placeholder]="'Type: ' + selectedPresetData[key]" />
+            <input [type]="getInputType(selectedPresetData[key])" class="form-control" [id]="key"
+              [(ngModel)]="itemInfoObj[key]" [name]="key" [disabled]="!enabledFields[key]" />
+          </div>
+
         </div>
       </div>
+
 
       <div class="form-group">
         <label for="itemImage">Genstandbillede:</label>

@@ -169,7 +169,7 @@ hr {
   padding: 30px;
   border-radius: 10px;
   width: 80%;
-  max-width: 500px;
+  max-width: 1200px;
   position: relative;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   z-index: 10001;
@@ -216,6 +216,7 @@ hr {
 
 .form-control {
   width: 100%;
+  height: 50px;
   padding: 0.6rem;
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -247,6 +248,31 @@ select.form-control {
 textarea.form-control {
   resize: vertical;
   min-height: 80px;
+}
+/* keep items on one line with a little gap */
+.details-field {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+/* FIXED label width so all inputs start at the same x-position */
+.details-label {
+  flex: 0 0 110px;         /* adjust 110px to your taste (90–130px works well) */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* long labels truncate nicely */
+}
+
+/* input takes the remaining space evenly across cards */
+.details-input {
+  flex: 1 1 0;
+  min-width: 0;            /* prevents overflow in flex containers */
+}
+
+/* optional: align checkbox width for consistency */
+.details-field > input[type="checkbox"] {
+  flex: 0 0 auto;
 }
 
 /* =========================================
