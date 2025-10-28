@@ -31,6 +31,7 @@ import { ComputerComponent } from './computer/computer.component';
 import { ComputerpartComponent } from './computerpart/computerpart.component';
 import { PartGroupsComponent } from './part-groups/part-groups.component';
 import { PartTypeComponent } from './part-type/part-type.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 
 export const routes: Routes = [
   //Default route
@@ -69,6 +70,12 @@ export const routes: Routes = [
     component: ItemGroupsComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: [1, 4] },
+  },
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [1, 2, 4] },
   },
   {
     path: 'itemtype',
