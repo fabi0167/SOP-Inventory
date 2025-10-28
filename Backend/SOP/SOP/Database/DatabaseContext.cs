@@ -102,8 +102,20 @@ namespace SOP.Database
 
 
             modelBuilder.Entity<Loan>()
-                .Property(l => l.Id)
-                .ValueGeneratedOnAdd();
+               .Property(l => l.Id)
+               .ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<Loan>()
+                .HasOne(l => l.Borrower)
+                .WithMany(u => u.Loans)
+                .HasForeignKey(l => l.BorrowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Loan>()
+                .HasOne(l => l.Approver)
+                .WithMany()
+                .HasForeignKey(l => l.ApproverId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Request>()
                 .Property(r => r.Id)
@@ -340,10 +352,11 @@ namespace SOP.Database
                 {
                     Id = 1,
                     ItemId = 1,
-                    UserId = 1,
+                    BorrowerId = 1,
+                    ApproverId = 1,
                     LoanDate = new DateTime(2024, 10, 15, 8, 59, 59),
                     ReturnDate = new DateTime(2026, 6, 29, 14, 59, 59)
-                } 
+                }
             );
 
             modelBuilder.Entity<Preset>().HasData(

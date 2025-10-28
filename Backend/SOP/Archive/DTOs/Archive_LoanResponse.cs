@@ -1,13 +1,12 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-
 namespace SOP.DTOs
 {
     public class Archive_LoanResponse
     {
         public int Id { get; set; }
 
-        public int UserId { get; set; }
+        public int BorrowerId { get; set; }
+
+        public int ApproverId { get; set; }
 
         public int ItemId { get; set; }
 
@@ -16,6 +15,13 @@ namespace SOP.DTOs
         public DateTime ReturnDate { get; set; }
 
         public DateTime DeleteTime { get; set; }
+
         public string ArchiveNote { get; set; }
+
+        public int UserId
+        {
+            get => BorrowerId;
+            set => BorrowerId = value;
+        }
     }
 }

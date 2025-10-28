@@ -45,7 +45,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -56,7 +57,8 @@ namespace SOPTests.Repositories
             {
                 Id = 2,
                 ItemId = 2,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2001, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2022, 12, 29, 23, 59, 59),
             };
@@ -96,13 +98,15 @@ namespace SOPTests.Repositories
             Assert.Equal(2, result.Count);
             Assert.Equal(loan1.Id, result[0].Id);
             Assert.Equal(loan1.ItemId, result[0].ItemId);
-            Assert.Equal(loan1.UserId, result[0].UserId);
+            Assert.Equal(loan1.BorrowerId, result[0].BorrowerId);
+            Assert.Equal(loan1.ApproverId, result[0].ApproverId);
             Assert.Equal(loan1.LoanDate, result[0].LoanDate);
             Assert.Equal(loan1.ReturnDate, result[0].ReturnDate);
 
             Assert.Equal(loan2.Id, result[1].Id);
             Assert.Equal(loan2.ItemId, result[1].ItemId);
-            Assert.Equal(loan2.UserId, result[1].UserId);
+            Assert.Equal(loan2.BorrowerId, result[1].BorrowerId);
+            Assert.Equal(loan2.ApproverId, result[1].ApproverId);
             Assert.Equal(loan2.LoanDate, result[1].LoanDate);
             Assert.Equal(loan2.ReturnDate, result[1].ReturnDate);
         }
@@ -136,7 +140,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -151,7 +156,7 @@ namespace SOPTests.Repositories
 
             Assert.Equal(expectedId, result?.Id);
             Assert.Equal(Loan.ItemId, result?.ItemId);
-            Assert.Equal(Loan.UserId, result?.UserId);
+            Assert.Equal(Loan.BorrowerId, result?.BorrowerId);
             Assert.Equal(Loan.LoanDate, result?.LoanDate);
             Assert.Equal(Loan.ReturnDate, result?.ReturnDate);
         }
@@ -166,7 +171,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -214,7 +220,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -236,7 +243,8 @@ namespace SOPTests.Repositories
 
             Assert.Equal(LoanId, result.Id);
             Assert.Equal(loan.ItemId, result.ItemId);
-            Assert.Equal(loan.UserId, result.UserId);
+            Assert.Equal(loan.BorrowerId, result.BorrowerId);
+            Assert.Equal(loan.ApproverId, result.ApproverId);
             Assert.Equal(loan.LoanDate, result.LoanDate);
             Assert.Equal(loan.ReturnDate, result.ReturnDate);
 
@@ -289,7 +297,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -302,7 +311,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2099, 12, 1, 1, 1, 1),
                 ReturnDate = new DateTime(2099, 12, 1, 1, 1, 1),
             };
@@ -317,7 +327,7 @@ namespace SOPTests.Repositories
 
             Assert.Equal(updateLoan.LoanDate, result.LoanDate);
             Assert.Equal(updateLoan.ReturnDate, result.ReturnDate);
-            Assert.Equal(updateLoan.UserId, result.UserId);
+            Assert.Equal(updateLoan.BorrowerId, result.BorrowerId);
             Assert.Equal(updateLoan.ItemId, result.ItemId);
         }
 
@@ -350,7 +360,8 @@ namespace SOPTests.Repositories
             Loan updateLoan = new()
             {
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -396,7 +407,8 @@ namespace SOPTests.Repositories
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -415,7 +427,8 @@ namespace SOPTests.Repositories
             Assert.Equal(LoanId, result.Id);
             Assert.Equal(archiveNote, result.ArchiveNote);
             Assert.Equal(loan.ItemId, result.ItemId);
-            Assert.Equal(loan.UserId, result.UserId);
+            Assert.Equal(loan.BorrowerId, result.BorrowerId);
+            Assert.Equal(loan.ApproverId, result.ApproverId);
             Assert.Equal(loan.LoanDate, result.LoanDate);
             Assert.Equal(loan.ReturnDate, result.ReturnDate);
         }

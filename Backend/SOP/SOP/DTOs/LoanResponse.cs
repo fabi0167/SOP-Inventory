@@ -1,13 +1,12 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-
 namespace SOP.DTOs
 {
     public class LoanResponse
     {
         public int Id { get; set; }
 
-        public int UserId { get; set; }
+        public int BorrowerId { get; set; }
+
+        public int ApproverId { get; set; }
 
         public int ItemId { get; set; }
 
@@ -15,11 +14,32 @@ namespace SOP.DTOs
 
         public DateTime ReturnDate { get; set; }
 
-        public LoanUserResponse LoanUser { get; set; }
+        private LoanUserResponse? _loanBorrower;
+
+        public LoanUserResponse? LoanBorrower
+        {
+            get => _loanBorrower;
+            set => _loanBorrower = value;
+        }
+
+        public LoanUserResponse? LoanApprover { get; set; }
+
+        public LoanUserResponse? LoanUser
+        {
+            get => _loanBorrower;
+            set => _loanBorrower = value;
+        }
+
+        public int UserId
+        {
+            get => BorrowerId;
+            set => BorrowerId = value;
+        }
+
         public LoanItemResponse LoanItem { get; set; }
     }
 
-    public class LoanUserResponse 
+    public class LoanUserResponse
     {
         public int Id { get; set; }
 
@@ -34,7 +54,7 @@ namespace SOP.DTOs
         public bool TwoFactorAuthentication { get; set; }
     }
 
-    public class LoanItemResponse 
+    public class LoanItemResponse
     {
         public int Id { get; set; }
 

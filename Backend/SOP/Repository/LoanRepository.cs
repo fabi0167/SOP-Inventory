@@ -24,7 +24,8 @@ namespace SOP.Repositories
         public async Task<List<Loan>> GetAllAsync()
         {
             return await _context.Loan
-                .Include(x => x.User)
+                .Include(x => x.Borrower)
+                .Include(x => x.Approver)
                 .Include(x => x.Item)
                 .ToListAsync();
         }
@@ -39,7 +40,8 @@ namespace SOP.Repositories
         public async Task<Loan?> FindByIdAsync(int loanId)
         {
             return await _context.Loan
-                .Include(x => x.User)
+                .Include(x => x.Borrower)
+                .Include(x => x.Approver)
                 .Include(x => x.Item)
                 .FirstOrDefaultAsync(x => x.Id == loanId);
         }
@@ -52,7 +54,8 @@ namespace SOP.Repositories
             {
                 loan.ReturnDate = newLoan.ReturnDate;
                 loan.LoanDate = newLoan.LoanDate;
-                loan.UserId = newLoan.UserId;
+                loan.BorrowerId = newLoan.BorrowerId;
+                loan.ApproverId = newLoan.ApproverId;
                 loan.ItemId = newLoan.ItemId;
 
                 await _context.SaveChangesAsync();
@@ -73,7 +76,8 @@ namespace SOP.Repositories
             {
                 Id = loan.Id,
                 DeleteTime = DateTime.Now,
-                UserId = loan.UserId,
+                BorrowerId = loan.BorrowerId,
+                ApproverId = loan.ApproverId != 0 ? loan.ApproverId : loan.BorrowerId,
                 ItemId = loan.ItemId,
                 LoanDate = loan.LoanDate,
                 ReturnDate = loan.ReturnDate,

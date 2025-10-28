@@ -96,7 +96,8 @@ namespace SOP.Controllers
                     LoanDate = loan.LoanDate,
                     ReturnDate = loan.ReturnDate,
                     ItemId = loan.ItemId,
-                    UserId = loan.UserId,
+                    BorrowerId = loan.BorrowerId,
+                    ApproverId = loan.ApproverId,
                 };
 
                 return Ok(loanResponse);
@@ -116,7 +117,8 @@ namespace SOP.Controllers
                 LoanDate = archive_loan.LoanDate,
                 ReturnDate = archive_loan.ReturnDate,
                 ItemId = archive_loan.ItemId,
-                UserId = archive_loan.UserId,
+                BorrowerId = archive_loan.BorrowerId,
+                ApproverId = archive_loan.ApproverId,
                 ArchiveNote = archive_loan.ArchiveNote,
             };
 

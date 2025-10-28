@@ -68,6 +68,8 @@ export class ItemDetailsComponent implements OnInit {
     },
     loan: {
       id: 0,
+      borrowerId: 0,
+      approverId: 0,
       userId: 0,
       itemId: 0,
       loanDate: new Date(),
@@ -179,8 +181,9 @@ export class ItemDetailsComponent implements OnInit {
 
     await this.fetchItem(id);
     await this.fetchItemType(this.item);
-    if (this.item.loan?.userId !== undefined) {
-      await this.fetchUser(this.item.loan?.userId);
+    const borrowerId = this.item.loan?.borrowerId ?? this.item.loan?.userId;
+    if (borrowerId !== undefined) {
+      await this.fetchUser(borrowerId);
     }
   }
   getInputType(type: string): string {
@@ -381,8 +384,9 @@ export class ItemDetailsComponent implements OnInit {
         this.item = item;
 
         // Load additional details like user info for loans
-        if (this.item.loan && this.item.loan.userId) {
-          this.loadUserDetails(this.item.loan.userId);
+        const borrowerId = this.item.loan?.borrowerId ?? this.item.loan?.userId;
+        if (this.item.loan && borrowerId) {
+          this.loadUserDetails(borrowerId);
         }
 
         // Load item type info

@@ -84,14 +84,30 @@ export class LoanArchiveComponent implements OnInit {
     });
   }
 
-  getUserEmail(userId: number): string {
-    const user = this.users.find((user) => user.id === userId);
+  getBorrowerEmail(loan: ArchiveLoan): string {
+    return this.getUserDisplayEmail(loan.borrowerId ?? loan.userId);
+  }
 
-    if (user) {
-      const email = user.email;
-      return 'deleteTime' in user ? `${email} (Arkiveret)` : email;
+  getApproverEmail(loan: ArchiveLoan): string {
+    if (!loan.approverId) {
+      return this.getBorrowerEmail(loan);
     }
-    return 'Bruger ikke fundet';
+    return this.getUserDisplayEmail(loan.approverId);
+  }
+
+  private getUserDisplayEmail(userId?: number): string {
+    if (!userId) {
+      return 'Bruger ikke fundet';
+    }
+
+    const user = this.users.find((candidate) => candidate.id === userId);
+
+    if (!user) {
+      return 'Bruger ikke fundet';
+    }
+
+    const email = user.email;
+    return 'deleteTime' in user ? `${email} (Arkiveret)` : email;
   }
 
   // ITEM RELATED METHODS
@@ -278,13 +294,15 @@ export class LoanArchiveComponent implements OnInit {
     }
 
     this.filteredArchivedLoans = this.archiveLoans.filter((loan) => {
-      const userEmail = this.getUserEmail(loan.userId).toLowerCase();
+      const borrowerEmail = this.getBorrowerEmail(loan).toLowerCase();
+      const approverEmail = this.getApproverEmail(loan).toLowerCase();
       const serialNumber = this.getItemSerialNumber(loan.itemId).toLowerCase();
       const modelName = this.getItemGroupName(loan.itemId).toLowerCase();
       const typeName = this.getItemTypeName(loan.itemId).toLowerCase();
 
       return (
-        userEmail.includes(searchTerm) ||
+        borrowerEmail.includes(searchTerm) ||
+        approverEmail.includes(searchTerm) ||
         serialNumber.includes(searchTerm) ||
         modelName.includes(searchTerm) ||
         typeName.includes(searchTerm) ||
@@ -317,19 +335,33 @@ export class LoanArchiveComponent implements OnInit {
       }
 
       // Check if user exists (either active or archived)
-      const userExists = !!this.users.find((user) => user.id === loan.userId);
-      if (!userExists) {
-        alert('Brugeren findes ikke længere. Lånet kan ikke gendannes.');
+      const borrowerId = loan.borrowerId ?? loan.userId;
+      const borrower = this.users.find((user) => user.id === borrowerId);
+      if (!borrower) {
+        alert('Låntager findes ikke længere. Lånet kan ikke gendannes.');
         return;
       }
 
-      // Check if user is active (not archived)
-      const userIsActive = this.users.find(
-        (user) => user.id === loan.userId && !('deleteTime' in user)
-      );
-      if (!userIsActive) {
+      const approverId = loan.approverId ?? borrowerId;
+      const approver = this.users.find((user) => user.id === approverId);
+      if (!approver) {
+        alert('Godkender findes ikke længere. Lånet kan ikke gendannes.');
+        return;
+      }
+
+      // Check if borrower is active (not archived)
+      const borrowerIsActive = !('deleteTime' in borrower);
+      if (!borrowerIsActive) {
         alert(
-          'Brugeren er arkiveret. Gendan brugeren først før lånet kan gendannes.'
+          'Låntager er arkiveret. Gendan brugeren først før lånet kan gendannes.'
+        );
+        return;
+      }
+
+      const approverIsActive = !('deleteTime' in approver);
+      if (!approverIsActive) {
+        alert(
+          'Godkender er arkiveret. Gendan brugeren først før lånet kan gendannes.'
         );
         return;
       }

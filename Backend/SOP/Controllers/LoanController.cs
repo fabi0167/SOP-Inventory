@@ -123,7 +123,8 @@ namespace SOP.Controllers
                     LoanDate = loan.LoanDate,
                     ReturnDate = loan.ReturnDate,
                     ItemId = loan.ItemId,
-                    UserId = loan.UserId,
+                    BorrowerId = loan.BorrowerId,
+                    ApproverId = loan.ApproverId,
                     ArchiveNote = loan.ArchiveNote,
                 };
 
@@ -143,18 +144,31 @@ namespace SOP.Controllers
                 LoanDate = loan.LoanDate,
                 ReturnDate = loan.ReturnDate,
                 ItemId = loan.ItemId,
-                UserId = loan.UserId,
+                BorrowerId = loan.BorrowerId,
+                ApproverId = loan.ApproverId,
             };
 
-            if (loan.User != null)
+            if (loan.Borrower != null)
             {
                 response.LoanUser = new LoanUserResponse
                 {
-                    Id = loan.User.Id,
-                    Email = EncryptionHelper.Decrypt(loan.User.Email),
-                    Name = loan.User.Name,
-                    TwoFactorAuthentication = loan.User.TwoFactorAuthentication,
-                    RoleId = loan.User.RoleId,
+                    Id = loan.Borrower.Id,
+                    Email = EncryptionHelper.Decrypt(loan.Borrower.Email),
+                    Name = loan.Borrower.Name,
+                    TwoFactorAuthentication = loan.Borrower.TwoFactorAuthentication,
+                    RoleId = loan.Borrower.RoleId,
+                };
+            }
+
+            if (loan.Approver != null)
+            {
+                response.LoanApprover = new LoanUserResponse
+                {
+                    Id = loan.Approver.Id,
+                    Email = EncryptionHelper.Decrypt(loan.Approver.Email),
+                    Name = loan.Approver.Name,
+                    TwoFactorAuthentication = loan.Approver.TwoFactorAuthentication,
+                    RoleId = loan.Approver.RoleId,
                 };
             }
 
@@ -179,7 +193,10 @@ namespace SOP.Controllers
                 LoanDate = loanRequest.LoanDate,
                 ReturnDate = loanRequest.ReturnDate,
                 ItemId = loanRequest.ItemId,
-                UserId = loanRequest.UserId,
+                BorrowerId = loanRequest.BorrowerId,
+                ApproverId = loanRequest.ApproverId != 0
+                    ? loanRequest.ApproverId
+                    : loanRequest.BorrowerId,
             };
         }
     }

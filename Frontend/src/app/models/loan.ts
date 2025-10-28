@@ -3,10 +3,16 @@ import { User } from './user';
 
 export interface Loan {
   id: number;
-  userId: number;
+  borrowerId: number;
+  approverId: number;
   itemId: number;
   loanDate: Date;
   returnDate: Date;
-  loanUser?: User;
+  borrower?: User;
+  approver?: User;
+  loanApprover?: User;
   loanItem?: Item;
+  // Legacy API fields kept for backward compatibility
+  userId?: number;
+  loanUser?: User;
 }

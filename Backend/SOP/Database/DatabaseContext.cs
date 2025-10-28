@@ -55,6 +55,18 @@ namespace SOP.Database
                .Property(l => l.Id)
                .ValueGeneratedOnAdd();
 
+            modelBuilder.Entity<Loan>()
+                .HasOne(l => l.Borrower)
+                .WithMany(u => u.Loans)
+                .HasForeignKey(l => l.BorrowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Loan>()
+                .HasOne(l => l.Approver)
+                .WithMany()
+                .HasForeignKey(l => l.ApproverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<Request>()
                .Property(r => r.Id)
                .ValueGeneratedOnAdd();
@@ -779,7 +791,8 @@ namespace SOP.Database
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 2,
+                BorrowerId = 2,
+                ApproverId = 1,
                 LoanDate = new DateTime(2024, 10, 15, 8, 59, 59),
                 ReturnDate = new DateTime(2026, 06, 29, 14, 59, 59),
             },
@@ -787,7 +800,8 @@ namespace SOP.Database
             {
                 Id = 2,
                 ItemId = 3,
-                UserId = 2,
+                BorrowerId = 2,
+                ApproverId = 1,
                 LoanDate = new DateTime(2024, 10, 15, 8, 59, 59),
                 ReturnDate = new DateTime(2026, 06, 29, 14, 59, 59),
             },
@@ -795,7 +809,8 @@ namespace SOP.Database
             {
                 Id = 3,
                 ItemId = 5,
-                UserId = 2,
+                BorrowerId = 2,
+                ApproverId = 1,
                 LoanDate = new DateTime(2024, 11, 5, 9, 30, 0),
                 ReturnDate = new DateTime(2026, 07, 10, 12, 00, 0),
             },
@@ -803,7 +818,8 @@ namespace SOP.Database
             {
                 Id = 4,
                 ItemId = 8,
-                UserId = 6,
+                BorrowerId = 6,
+                ApproverId = 1,
                 LoanDate = new DateTime(2024, 11, 6, 9, 30, 0),
                 ReturnDate = new DateTime(2026, 07, 12, 12, 00, 0),
             },
@@ -811,7 +827,8 @@ namespace SOP.Database
             {
                 Id = 5,
                 ItemId = 10,
-                UserId = 7,
+                BorrowerId = 7,
+                ApproverId = 2,
                 LoanDate = new DateTime(2024, 11, 10, 10, 00, 0),
                 ReturnDate = new DateTime(2026, 07, 15, 15, 00, 0),
             },
@@ -819,7 +836,8 @@ namespace SOP.Database
             {
                 Id = 6,
                 ItemId = 12,
-                UserId = 8,
+                BorrowerId = 8,
+                ApproverId = 2,
                 LoanDate = new DateTime(2024, 11, 20, 14, 00, 0),
                 ReturnDate = new DateTime(2026, 08, 1, 11, 00, 0),
             },
@@ -827,7 +845,8 @@ namespace SOP.Database
             {
                 Id = 7,
                 ItemId = 15,
-                UserId = 9,
+                BorrowerId = 9,
+                ApproverId = 2,
                 LoanDate = new DateTime(2024, 11, 25, 13, 00, 0),
                 ReturnDate = new DateTime(2026, 08, 4, 16, 00, 0),
             },
@@ -835,7 +854,8 @@ namespace SOP.Database
             {
                 Id = 8,
                 ItemId = 18,
-                UserId = 10,
+                BorrowerId = 10,
+                ApproverId = 3,
                 LoanDate = new DateTime(2024, 12, 1, 8, 00, 0),
                 ReturnDate = new DateTime(2026, 08, 8, 14, 00, 0),
             },
@@ -843,7 +863,8 @@ namespace SOP.Database
             {
                 Id = 9,
                 ItemId = 22,
-                UserId = 11,
+                BorrowerId = 11,
+                ApproverId = 3,
                 LoanDate = new DateTime(2024, 12, 5, 9, 30, 0),
                 ReturnDate = new DateTime(2026, 08, 20, 12, 00, 0),
             },
@@ -851,7 +872,8 @@ namespace SOP.Database
             {
                 Id = 10,
                 ItemId = 25,
-                UserId = 12,
+                BorrowerId = 12,
+                ApproverId = 3,
                 LoanDate = new DateTime(2024, 12, 10, 10, 00, 0),
                 ReturnDate = new DateTime(2026, 08, 25, 13, 30, 0),
             }
@@ -926,7 +948,8 @@ namespace SOP.Database
             {
                 Id = 11,
                 ItemId = 4,
-                UserId = 11,
+                BorrowerId = 11,
+                ApproverId = 2,
                 LoanDate = new DateTime(2024, 12, 5, 9, 30, 0),
                 ReturnDate = new DateTime(2026, 08, 20, 12, 00, 0),
                 DeleteTime = new DateTime(2024, 10, 15, 8, 59, 59),
@@ -936,7 +959,8 @@ namespace SOP.Database
             {
                 Id = 12,
                 ItemId = 20,
-                UserId = 12,
+                BorrowerId = 12,
+                ApproverId = 3,
                 LoanDate = new DateTime(2024, 12, 10, 10, 00, 0),
                 ReturnDate = new DateTime(2026, 08, 25, 13, 30, 0),
                 DeleteTime = new DateTime(2024, 10, 15, 8, 59, 59),

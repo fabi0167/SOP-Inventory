@@ -28,7 +28,8 @@ export class LoanComponent implements OnInit {
   newLoan: Loan = {
     id: 0,
     itemId: 0,
-    userId: 0,
+    borrowerId: 0,
+    approverId: 0,
     loanDate: new Date(),
     returnDate: new Date(),
   };
@@ -70,6 +71,9 @@ export class LoanComponent implements OnInit {
     this.currentUser = JSON.parse(
       localStorage.getItem('currentUser') as string
     );
+    if (this.currentUser?.id) {
+      this.newLoan.approverId = this.currentUser.id;
+    }
     this.getLoans();
     this.getAvailableItems();
     this.getUsers();
@@ -139,15 +143,17 @@ export class LoanComponent implements OnInit {
 
   // Method to filter loans. \\
   filterLoans() {
-    this.filteredLoans = this.loans.filter(
-      (loan) =>
-        loan.loanItem?.serialNumber
-          .toLowerCase()
-          .includes(this.searchLoansTerm.toLowerCase()) ||
-        loan.loanUser?.email
-          .toLowerCase()
-          .includes(this.searchLoansTerm.toLowerCase())
-    );
+    const term = this.searchLoansTerm.toLowerCase();
+    this.filteredLoans = this.loans.filter((loan) => {
+      const serialNumber = (loan.loanItem?.serialNumber ?? '').toLowerCase();
+      const borrowerEmail = this.getBorrowerEmail(loan).toLowerCase();
+      const approverEmail = this.getApproverEmail(loan).toLowerCase();
+      return (
+        serialNumber.includes(term) ||
+        borrowerEmail.includes(term) ||
+        approverEmail.includes(term)
+      );
+    });
   }
 
   loanItem(item: Item) {
@@ -165,6 +171,11 @@ export class LoanComponent implements OnInit {
       );
       if (existingLoan) {
         alert('This item is already loaned.');
+        return;
+      }
+
+      if (!this.newLoan.borrowerId || !this.newLoan.approverId) {
+        alert('Borrower and approver must be selected.');
         return;
       }
 
@@ -194,6 +205,11 @@ export class LoanComponent implements OnInit {
       return;
     }
 
+    if (!this.newLoan.borrowerId || !this.newLoan.approverId) {
+      alert('Borrower and approver must be selected.');
+      return;
+    }
+
     this.loanService.update(this.newLoan).subscribe(
       (data) => {
         const index = this.loans.findIndex((loan) => loan.id === data.id);
@@ -214,7 +230,11 @@ export class LoanComponent implements OnInit {
   editLoan(loan: Loan) {
     this.isEditing = true;
     this.getItems();
-    this.newLoan = { ...loan }; // Create a copy of the loan object to avoid modifying the original
+    this.newLoan = {
+      ...loan,
+      borrowerId: loan.borrowerId ?? loan.userId ?? 0,
+      approverId: loan.approverId ?? this.currentUser?.id ?? 0,
+    }; // Create a copy of the loan object to avoid modifying the original
   }
 
 
@@ -227,7 +247,8 @@ export class LoanComponent implements OnInit {
     this.newLoan = {
       id: 0,
       itemId: 0,
-      userId: 0,
+      borrowerId: 0,
+      approverId: this.currentUser?.id ?? 0,
       loanDate: new Date(),
       returnDate: new Date(),
     };
@@ -284,5 +305,28 @@ export class LoanComponent implements OnInit {
     }
     this.archiveNote = '';
     this.showErrorNote = false;
+  }
+
+  getBorrowerEmail(loan: Loan): string {
+    return (
+      loan.borrower?.email ??
+      loan.loanUser?.email ??
+      this.getUserEmailById(loan.borrowerId ?? loan.userId)
+    );
+  }
+
+  getApproverEmail(loan: Loan): string {
+    return (
+      loan.approver?.email ??
+      loan.loanApprover?.email ??
+      this.getUserEmailById(loan.approverId)
+    );
+  }
+
+  private getUserEmailById(userId?: number): string {
+    if (!userId) {
+      return '';
+    }
+    return this.users.find((user) => user.id === userId)?.email ?? '';
   }
 }

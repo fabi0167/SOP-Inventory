@@ -18,7 +18,8 @@
   <thead>
     <tr>
       <th>Dato for sletning</th>
-      <th>Bruger</th>
+      <th>Låntager</th>
+      <th>Godkender</th>
       <th>Serienummer</th>
       <th>Model</th>
       <th>Type</th>
@@ -32,7 +33,8 @@
   <tbody>
     <tr *ngFor="let archiveloan of filteredArchivedLoans">
       <td>{{ archiveloan.deleteTime | date : "dd/MM/yyyy" }}</td>
-      <td>{{ getUserEmail(archiveloan.userId) }}</td>
+      <td>{{ getBorrowerEmail(archiveloan) }}</td>
+      <td>{{ getApproverEmail(archiveloan) }}</td>
       <td>{{ getItemSerialNumber(archiveloan.itemId) }}</td>
       <td>{{ getItemGroupName(archiveloan.itemId) }}</td>
       <td>{{ getItemTypeName(archiveloan.itemId) }}</td>

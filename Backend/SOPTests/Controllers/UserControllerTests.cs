@@ -46,6 +46,8 @@ namespace SOPTests.Controllers
                         {
                             Id=1,
                             ItemId=1,
+                            BorrowerId = 1,
+                            ApproverId = 1,
                             LoanDate = DateTime.Now,
                             ReturnDate = DateTime.Now,
                             Item = new()
@@ -88,6 +90,8 @@ namespace SOPTests.Controllers
                     {
                         Id=1,
                         ItemId=1,
+                        BorrowerId = 1,
+                        ApproverId = 1,
                         LoanDate = DateTime.Now,
                         ReturnDate = DateTime.Now,
                         Item = new()
@@ -248,6 +252,8 @@ namespace SOPTests.Controllers
                     {
                         Id=userId,
                         ItemId=userId,
+                        BorrowerId = userId,
+                        ApproverId = userId,
                         LoanDate = DateTime.Now,
                         ReturnDate = DateTime.Now,
                         UserLoanItem = new()
@@ -292,6 +298,8 @@ namespace SOPTests.Controllers
                     {
                         Id=userId,
                         ItemId=userId,
+                        BorrowerId = userId,
+                        ApproverId = userId,
                         LoanDate = DateTime.Now,
                         ReturnDate = DateTime.Now,
                         Item = new()
@@ -415,6 +423,8 @@ namespace SOPTests.Controllers
                     {
                         Id=userId,
                         ItemId=userId,
+                        BorrowerId = userId,
+                        ApproverId = userId,
                         LoanDate = DateTime.Now,
                         ReturnDate = DateTime.Now,
                         Item = new()
@@ -558,6 +568,8 @@ namespace SOPTests.Controllers
                     {
                         Id=userId,
                         ItemId=userId,
+                        BorrowerId = userId,
+                        ApproverId = userId,
                         LoanDate = DateTime.Now,
                         ReturnDate = DateTime.Now,
                         Item = new()

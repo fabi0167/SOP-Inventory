@@ -63,6 +63,8 @@ export class ProfileComponent implements OnInit {
     loanDate: new Date('0000-00-00'),
     returnDate: new Date('0000-00-00'),
     itemId: 0,
+    borrowerId: 0,
+    approverId: 0,
     userId: 0,
   };
 

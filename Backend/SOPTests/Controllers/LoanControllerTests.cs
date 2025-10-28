@@ -25,10 +25,11 @@ namespace SOPTests.Controllers
                 {
                     Id = 1,
                     ItemId = 1,
-                    UserId = 1,
+                    BorrowerId = 1,
+                    ApproverId = 2,
                     LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                     ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
-                    Item = new Item { 
+                    Item = new Item {
                         Id = 1,
                         ItemGroupId = 1,
                         RoomId = 1,
@@ -39,7 +40,8 @@ namespace SOPTests.Controllers
                 {
                     Id = 2,
                     ItemId = 1,
-                    UserId = 1,
+                    BorrowerId = 1,
+                    ApproverId = 2,
                     LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                     ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
                     Item = new Item
@@ -103,7 +105,8 @@ namespace SOPTests.Controllers
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             int loanId = 1;
@@ -111,7 +114,8 @@ namespace SOPTests.Controllers
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 LoanDate = new DateTime(2002, 12, 29, 23,59,59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 Item = new Item
@@ -153,7 +157,8 @@ namespace SOPTests.Controllers
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             _loanRepositoryMock
@@ -182,14 +187,16 @@ namespace SOPTests.Controllers
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             Loan loan = new()
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 Item = new Item
@@ -274,7 +281,8 @@ namespace SOPTests.Controllers
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             int loanId = 1;
@@ -283,7 +291,8 @@ namespace SOPTests.Controllers
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 Item = new Item
@@ -325,7 +334,8 @@ namespace SOPTests.Controllers
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             int loanId = 1;
@@ -354,7 +364,8 @@ namespace SOPTests.Controllers
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             int loanId = 1;
@@ -389,7 +400,8 @@ namespace SOPTests.Controllers
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 DeleteTime = new DateTime(2002, 12, 29, 23, 59, 59),
