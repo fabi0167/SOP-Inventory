@@ -290,6 +290,8 @@ namespace SOPTests.Archive.Controllers
                     {
                         Id=userId,
                         ItemId=userId,
+                        BorrowerId = userId,
+                        ApproverId = userId,
                         LoanDate = DateTime.Now,
                         ReturnDate = DateTime.Now,
                         Item = new()

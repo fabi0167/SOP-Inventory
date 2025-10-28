@@ -31,7 +31,8 @@ namespace SOPTests.Archive.Repositories
                 LoanDate = new DateTime(2021, 6, 10),
                 ReturnDate = new DateTime(2021, 12, 24),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 1,
                 ArchiveNote = "Test archive note",
             });
 
@@ -42,7 +43,8 @@ namespace SOPTests.Archive.Repositories
                 LoanDate = new DateTime(2099, 10, 10),
                 ReturnDate = new DateTime(2099, 8, 15),
                 ItemId = 2,
-                UserId = 3,
+                BorrowerId = 3,
+                ApproverId = 3,
                 ArchiveNote = "Test archive note",
             });
 
@@ -91,7 +93,8 @@ namespace SOPTests.Archive.Repositories
                 LoanDate = new DateTime(2099, 10, 10),
                 ReturnDate = new DateTime(2099, 8, 15),
                 ItemId = 2,
-                UserId = 3,
+                BorrowerId = 3,
+                ApproverId = 3,
                 ArchiveNote = "Test archive note",
             });
 
@@ -137,7 +140,8 @@ namespace SOPTests.Archive.Repositories
                 LoanDate = new DateTime(2099, 10, 10),
                 ReturnDate = new DateTime(2099, 8, 15),
                 ItemId = 2,
-                UserId = 3,
+                BorrowerId = 3,
+                ApproverId = 3,
                 ArchiveNote = "Test archive note",
             };
 
@@ -157,8 +161,9 @@ namespace SOPTests.Archive.Repositories
             Assert.Equal(loan.DeleteTime, result.DeleteTime);
             Assert.Equal(loan.LoanDate, result.LoanDate);
             Assert.Equal(loan.ReturnDate, result.ReturnDate);
+            Assert.Equal(loan.BorrowerId, result.BorrowerId);
+            Assert.Equal(loan.ApproverId, result.ApproverId);
             Assert.Equal(loan.ItemId, result.ItemId);
-            Assert.Equal(loan.UserId, result.UserId);
         }
 
         [Fact]
@@ -192,7 +197,8 @@ namespace SOPTests.Archive.Repositories
                 LoanDate = new DateTime(2099, 10, 10),
                 ReturnDate = new DateTime(2099, 8, 15),
                 ItemId = 2,
-                UserId = 3,
+                BorrowerId = 3,
+                ApproverId = 3,
                 ArchiveNote = "Test archive note",
             };
 
@@ -204,13 +210,12 @@ namespace SOPTests.Archive.Repositories
 
             // Assert
             Assert.NotNull(result);
-
             Assert.IsType<Loan>(result);
-
             Assert.Equal(loanId, result.Id);
-
             Assert.Equal(loan.LoanDate, result.LoanDate);
             Assert.Equal(loan.ReturnDate, result.ReturnDate);
+            Assert.Equal(loan.BorrowerId, result.BorrowerId);
+            Assert.Equal(loan.ApproverId, result.ApproverId);
 
             var itemInDatabase = await _context.Loan.FindAsync(loanId);
             Assert.NotNull(itemInDatabase);

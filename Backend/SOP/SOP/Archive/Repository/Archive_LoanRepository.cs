@@ -54,7 +54,8 @@ namespace SOP.Archive.Repository
                 LoanDate = archiveLoan.LoanDate,
                 ReturnDate = archiveLoan.ReturnDate,
                 ItemId = archiveLoan.ItemId,
-                UserId = archiveLoan.UserId,
+                BorrowerId = archiveLoan.BorrowerId,
+                ApproverId = archiveLoan.ApproverId != 0 ? archiveLoan.ApproverId : archiveLoan.BorrowerId,
             };
 
             if (_context.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")

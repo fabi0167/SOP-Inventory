@@ -49,8 +49,17 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="user">Email</label>
-          <select class="form-control" id="user" [(ngModel)]="newLoan.userId" name="user" required>
+          <label for="borrower">Låntager</label>
+          <select class="form-control" id="borrower" [(ngModel)]="newLoan.borrowerId" name="borrower" required>
+            <option [ngValue]="0" disabled>Vælg låntager</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.email }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="approver">Godkender</label>
+          <select class="form-control" id="approver" [(ngModel)]="newLoan.approverId" name="approver" required>
             <option *ngFor="let user of users" [value]="user.id">
               {{ user.email }}
             </option>
@@ -91,8 +100,9 @@
         <thead>
           <tr>
             <th>Genstands SerieNummer</th>
-            <th>Email</th>
-            <th>udlåns Dato</th>
+            <th>Låntager Email</th>
+            <th>Godkender Email</th>
+            <th>Udlåns Dato</th>
             <th>Retur Dato</th>
             <th>Aktioner</th>
           </tr>
@@ -100,7 +110,8 @@
         <tbody>
           <tr *ngFor="let loan of filteredLoans" class="clickable-row">
             <td>{{ loan.loanItem?.serialNumber }}</td>
-            <td>{{ loan.loanUser?.email }}</td>
+            <td>{{ getBorrowerEmail(loan) }}</td>
+            <td>{{ getApproverEmail(loan) }}</td>
             <td>{{ loan.loanDate | date }}</td>
             <td>{{ loan.returnDate | date }}</td>
             <td>

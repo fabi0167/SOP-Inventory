@@ -127,7 +127,7 @@ namespace SOP.Repositories
 
             // Archive all Loans associated with this User
             List<Loan> loansToArchive = await _context.Loan
-                .Where(loan => loan.UserId == userId)
+                .Where(loan => loan.BorrowerId == userId)
                 .ToListAsync();
 
             foreach (var loan in loansToArchive)
@@ -171,7 +171,8 @@ namespace SOP.Repositories
             {
                 Id = loan.Id,
                 DeleteTime = DateTime.Now,
-                UserId = loan.UserId,
+                BorrowerId = loan.BorrowerId,
+                ApproverId = loan.ApproverId != 0 ? loan.ApproverId : loan.BorrowerId,
                 ItemId = loan.ItemId,
                 LoanDate = loan.LoanDate,
                 ReturnDate = loan.ReturnDate,

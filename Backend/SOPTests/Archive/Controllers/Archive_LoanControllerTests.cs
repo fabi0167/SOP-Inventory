@@ -24,7 +24,8 @@
                 {
                     Id = 1,
                     ItemId = 1,
-                    UserId = 1,
+                    BorrowerId = 1,
+                    ApproverId = 2,
                     LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                     ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 },
@@ -32,7 +33,8 @@
                 {
                     Id = 2,
                     ItemId = 1,
-                    UserId = 1,
+                    BorrowerId = 1,
+                    ApproverId = 2,
                     LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                     ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 },
@@ -98,14 +100,16 @@
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2003, 1, 29, 23, 59, 59),
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
             };
 
             Archive_Loan loan = new()
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
@@ -182,7 +186,8 @@
             Archive_Loan archiveLoan = new()
             {
                 Id = itemId,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 ItemId = 2,
                 LoanDate = DateTime.UtcNow.AddMonths(-1),
                 ReturnDate = DateTime.UtcNow.AddMonths(1),
@@ -204,7 +209,8 @@
             var data = objectResult.Value as Archive_LoanResponse;
             Assert.NotNull(data);
             Assert.Equal(itemId, data.Id);
-            Assert.Equal(archiveLoan.UserId, data.UserId);
+            Assert.Equal(archiveLoan.BorrowerId, data.BorrowerId);
+            Assert.Equal(archiveLoan.ApproverId, data.ApproverId);
             Assert.Equal(archiveLoan.ItemId, data.ItemId);
             Assert.Equal(archiveLoan.LoanDate, data.LoanDate);
             Assert.Equal(archiveLoan.ReturnDate, data.ReturnDate);
@@ -259,7 +265,8 @@
             {
                 Id = 1,
                 ItemId = 1,
-                UserId = 1,
+                BorrowerId = 1,
+                ApproverId = 2,
                 LoanDate = new DateTime(2002, 12, 29, 23, 59, 59),
                 ReturnDate = new DateTime(2002, 12, 29, 23, 59, 59),
             };
