@@ -63,5 +63,23 @@
         </div>
       </div>
     </div>
+
+    <div class="col-12">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Hurtigt overblik</h5>
+          <div class="status-grid quick-stats-grid">
+            <div class="status-card emphasis-card">
+              <p class="status-name">Udlånte genstande</p>
+              <p class="status-count">{{ summary.borrowedItemCount }}</p>
+            </div>
+            <div class="status-card emphasis-card">
+              <p class="status-name">Ikke-fungerende genstande</p>
+              <p class="status-count">{{ summary.nonFunctionalItemCount }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
