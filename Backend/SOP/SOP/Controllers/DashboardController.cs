@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SOP.DTOs;
+using SOP.Entities;
 using SOP.Repositories;
 using System;
 using System.Collections.Generic;
@@ -101,6 +102,89 @@ namespace SOP.Controllers
             {
                 return Problem(ex.Message);
             }
+        }
+
+        [Authorize("Admin", "Instruktør", "Drift")]
+        [HttpGet("status-items")]
+        public async Task<IActionResult> GetItemsByStatusAsync([FromQuery] string status, [FromQuery] string? search = null)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return BadRequest("Status er påkrævet.");
+            }
+
+            try
+            {
+                string normalizedStatus = NormalizeStatusName(status);
+                var items = await _itemRepository.GetAllAsync();
+
+                List<DashboardStatusItemResponse> responses = items
+                    .Select(item => new
+                    {
+                        Item = item,
+                        LatestStatus = item.StatusHistories?
+                            .OrderByDescending(history => history.StatusUpdateDate)
+                            .ThenByDescending(history => history.Id)
+                            .FirstOrDefault()
+                    })
+                    .Where(result => result.LatestStatus != null)
+                    .Where(result => NormalizeStatusName(result.LatestStatus!.Status?.Name ?? string.Empty) == normalizedStatus)
+                    .Select(result => new DashboardStatusItemResponse
+                    {
+                        ItemId = result.Item.Id,
+                        SerialNumber = result.Item.SerialNumber,
+                        ItemGroupName = result.Item.ItemGroup?.ModelName,
+                        RoomName = BuildRoomName(result.Item),
+                        StatusUpdatedAt = result.LatestStatus!.StatusUpdateDate,
+                        StatusNote = result.LatestStatus!.Note
+                    })
+                    .ToList();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    string trimmedSearch = search.Trim();
+                    responses = responses
+                        .Where(item =>
+                            (!string.IsNullOrWhiteSpace(item.SerialNumber) && item.SerialNumber!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrWhiteSpace(item.ItemGroupName) && item.ItemGroupName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrWhiteSpace(item.RoomName) && item.RoomName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+                }
+
+                responses = responses
+                    .OrderByDescending(item => item.StatusUpdatedAt)
+                    .ThenBy(item => item.SerialNumber)
+                    .ToList();
+
+                return Ok(responses);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+
+        private static string NormalizeStatusName(string? statusName)
+        {
+            return string.IsNullOrWhiteSpace(statusName)
+                ? string.Empty
+                : new string(statusName.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
+
+        private static string? BuildRoomName(Item item)
+        {
+            if (item.Room == null)
+            {
+                return null;
+            }
+
+            string buildingName = item.Room.Building?.BuildingName ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(buildingName))
+            {
+                return $"{buildingName} {item.Room.RoomNumber}";
+            }
+
+            return item.Room.RoomNumber.ToString();
         }
     }
 }
