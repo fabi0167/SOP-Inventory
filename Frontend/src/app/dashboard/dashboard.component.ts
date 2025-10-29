@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { DashboardService } from '../services/dashboard.service';
 import { DashboardSummary } from '../models/dashboard-summary';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,10 @@ export class DashboardComponent implements OnInit {
   isLoading = false;
   errorMessage: string | null = null;
 
-  constructor(private dashboardService: DashboardService) { }
+  constructor(
+    private dashboardService: DashboardService,
+    private router: Router,
+  ) { }
 
   ngOnInit(): void {
     this.loadSummary();
@@ -49,5 +53,9 @@ export class DashboardComponent implements OnInit {
     }
 
     return 'Der opstod en fejl under hentning af dashboarddata.';
+  }
+
+  goToActiveLoans(): void {
+    this.router.navigate(['/dashboard/active-loans']);
   }
 }
