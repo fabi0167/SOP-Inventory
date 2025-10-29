@@ -19,10 +19,18 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
+.status-card.quick-stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 140px;
+}
+
 button.status-card {
   border: none;
   cursor: pointer;
   width: 100%;
+  background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(13, 202, 240, 0.1));
 }
 
 button.status-card:focus-visible {
@@ -56,9 +64,19 @@ button.status-card:focus-visible {
 }
 
 .quick-stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .emphasis-card {
-  background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(13, 202, 240, 0.08));
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.15), rgba(13, 202, 240, 0.12));
+}
+
+.warning-card {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.18), rgba(255, 87, 34, 0.12));
+}
+
+@media (max-width: 576px) {
+  .status-card.quick-stat-card {
+    min-height: 110px;
+  }
 }

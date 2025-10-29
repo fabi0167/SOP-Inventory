@@ -12,7 +12,7 @@
   </div>
 
   <div *ngIf="!isLoading && !errorMessage && summary" class="row g-3">
-    <div class="col-12 col-xl-4">
+    <div class="col-12">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h5 class="card-title">Hurtigt overblik</h5>
@@ -35,21 +35,28 @@
       </div>
     </div>
 
-    <div class="col-12 col-xl-8">
+    <div class="col-12">
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h5 class="card-title">Genstande efter status</h5>
           <div class="status-grid">
-            <div class="status-card" *ngFor="let status of summary.statusCounts">
-              <p class="status-name">{{ status.status }}</p>
-              <p class="status-count">{{ status.count }}</p>
-            </div>
-            <button type="button" class="status-card status-card-link" (click)="goToActiveLoans()">
-              <span class="visually-hidden">Gå til aktive udlån</span>
-              <p class="status-name">Aktive udlån</p>
-              <p class="status-count">{{ summary.activeLoanCount }}</p>
-            </button>
-            <div *ngIf="summary.statusCounts.length === 0" class="text-muted status-empty">
+            <ng-container *ngFor="let status of getStatusCounts(); trackBy: trackStatusBy">
+              <button
+                *ngIf="isStatusClickable(status.status)"
+                type="button"
+                class="status-card status-card-link"
+                (click)="goToStatusItems(status.status)"
+              >
+                <span class="visually-hidden">Se genstande med status {{ status.status }}</span>
+                <p class="status-name">{{ getStatusDisplayName(status.status) }}</p>
+                <p class="status-count">{{ status.count }}</p>
+              </button>
+              <div *ngIf="!isStatusClickable(status.status)" class="status-card">
+                <p class="status-name">{{ getStatusDisplayName(status.status) }}</p>
+                <p class="status-count">{{ status.count }}</p>
+              </div>
+            </ng-container>
+            <div *ngIf="getStatusCounts().length === 0" class="text-muted status-empty">
               Ingen statusdata tilgængelig.
             </div>
           </div>

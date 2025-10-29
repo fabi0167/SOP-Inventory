@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SOP.Database;
 using SOP.Entities;
+using System;
 using System.Linq;
 
 namespace SOP.Repositories
@@ -9,9 +10,9 @@ namespace SOP.Repositories
     {
         Task<List<Loan>> GetAllAsync();
         Task<Loan> CreateAsync(Loan loan);
-        Task<Loan> FindByIdAsync(int id);
-        Task<Loan> UpdateByIdAsync(int id, Loan loan);
-        Task<Archive_Loan> ArchiveByIdAsync(int id, string archiveNote);
+        Task<Loan?> FindByIdAsync(int id);
+        Task<Loan?> UpdateByIdAsync(int id, Loan loan);
+        Task<Archive_Loan?> ArchiveByIdAsync(int id, string archiveNote);
         Task<int> GetActiveLoanCountAsync();
         Task<List<Loan>> GetActiveLoansAsync(
             int? borrowerId,
@@ -274,66 +275,6 @@ namespace SOP.Repositories
                 .Where(c => !char.IsWhiteSpace(c))
                 .Select(char.ToLowerInvariant)
                 .ToArray());
-        }
-
-        public async Task<int> GetActiveLoanCountAsync()
-        {
-            return await _context.Loan.CountAsync();
-        }
-
-        public async Task<List<Loan>> GetActiveLoansAsync(
-            int? borrowerId,
-            int? approverId,
-            int? itemId,
-            DateTime? loanDateFrom,
-            DateTime? loanDateTo,
-            string? searchTerm)
-        {
-            IQueryable<Loan> query = _context.Loan
-                .Include(x => x.Borrower)
-                .Include(x => x.Approver)
-                .Include(x => x.Item);
-
-            if (borrowerId.HasValue)
-            {
-                query = query.Where(loan => loan.BorrowerId == borrowerId.Value);
-            }
-
-            if (approverId.HasValue)
-            {
-                query = query.Where(loan => loan.ApproverId == approverId.Value);
-            }
-
-            if (itemId.HasValue)
-            {
-                query = query.Where(loan => loan.ItemId == itemId.Value);
-            }
-
-            if (loanDateFrom.HasValue)
-            {
-                query = query.Where(loan => loan.LoanDate >= loanDateFrom.Value);
-            }
-
-            if (loanDateTo.HasValue)
-            {
-                query = query.Where(loan => loan.LoanDate <= loanDateTo.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                string trimmedSearch = searchTerm.Trim();
-                string likeValue = $"%{trimmedSearch}%";
-
-                query = query.Where(loan =>
-                    (loan.Item != null && loan.Item.SerialNumber != null && EF.Functions.Like(loan.Item.SerialNumber, likeValue)) ||
-                    (loan.Borrower != null && loan.Borrower.Name != null && EF.Functions.Like(loan.Borrower.Name, likeValue)) ||
-                    (loan.Approver != null && loan.Approver.Name != null && EF.Functions.Like(loan.Approver.Name, likeValue)));
-            }
-
-            return await query
-                .OrderByDescending(loan => loan.LoanDate)
-                .ThenByDescending(loan => loan.Id)
-                .ToListAsync();
         }
     }
 }

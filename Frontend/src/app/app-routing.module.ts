@@ -33,6 +33,7 @@ import { PartGroupsComponent } from './part-groups/part-groups.component';
 import { PartTypeComponent } from './part-type/part-type.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ActiveLoansComponent } from './loan-active/active-loans.component';
+import { StatusItemsComponent } from './dashboard-status/status-items.component';
 
 export const routes: Routes = [
   //Default route
@@ -81,6 +82,12 @@ export const routes: Routes = [
   {
     path: 'dashboard/active-loans',
     component: ActiveLoansComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [1, 2, 4] },
+  },
+  {
+    path: 'dashboard/status/:statusName',
+    component: StatusItemsComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: [1, 2, 4] },
   },
