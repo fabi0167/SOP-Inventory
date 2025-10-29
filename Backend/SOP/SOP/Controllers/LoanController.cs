@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SOP.Archive.DTOs;
 using SOP.DTOs;
@@ -33,6 +34,32 @@ namespace SOP.Controllers
             catch (Exception ex)
             {
 
+                return Problem(ex.Message);
+            }
+        }
+
+        [Authorize("Admin", "Instruktør", "Drift")]
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActiveAsync([FromQuery] ActiveLoanQuery query)
+        {
+            try
+            {
+                List<Loan> loans = await _loanRepository.GetActiveLoansAsync(
+                    query.BorrowerId,
+                    query.ApproverId,
+                    query.ItemId,
+                    query.LoanDateFrom,
+                    query.LoanDateTo,
+                    query.Search);
+
+                List<LoanResponse> responses = loans
+                    .Select(loan => MapLoanToLoanResponse(loan))
+                    .ToList();
+
+                return Ok(responses);
+            }
+            catch (Exception ex)
+            {
                 return Problem(ex.Message);
             }
         }

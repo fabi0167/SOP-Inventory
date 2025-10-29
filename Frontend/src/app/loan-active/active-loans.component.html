@@ -1,0 +1,89 @@
+<app-navbar></app-navbar>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0">Aktive udlån</h2>
+    <button class="btn btn-outline-secondary" type="button" (click)="clearFilters()">
+      Nulstil filtre
+    </button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form class="row g-3">
+        <div class="col-12 col-lg-6 col-xxl-4">
+          <label for="search" class="form-label">Søg</label>
+          <input
+            id="search"
+            type="text"
+            class="form-control"
+            name="search"
+            [value]="filters.search || ''"
+            (input)="onSearchChange($any($event.target).value)"
+            placeholder="Søg på serienummer, låner eller godkender"
+          />
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 col-xxl-2">
+          <label for="loanDateFrom" class="form-label">Lånedato fra</label>
+          <input
+            id="loanDateFrom"
+            type="date"
+            class="form-control"
+            name="loanDateFrom"
+            [(ngModel)]="filters.loanDateFrom"
+            (change)="onDateFilterChange()"
+          />
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3 col-xxl-2">
+          <label for="loanDateTo" class="form-label">Lånedato til</label>
+          <input
+            id="loanDateTo"
+            type="date"
+            class="form-control"
+            name="loanDateTo"
+            [(ngModel)]="filters.loanDateTo"
+            (change)="onDateFilterChange()"
+          />
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="alert alert-info" role="alert">
+    Indlæser aktive udlån...
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    {{ errorMessage }}
+  </div>
+
+  <div class="card" *ngIf="!isLoading && !errorMessage">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Serienummer</th>
+            <th scope="col">Låner</th>
+            <th scope="col">Godkender</th>
+            <th scope="col">Lånedato</th>
+            <th scope="col">Forventet afleveringsdato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let loan of loans">
+            <td>{{ loan.loanItem?.serialNumber || '—' }}</td>
+            <td>{{ getBorrowerName(loan) }}</td>
+            <td>{{ getApproverName(loan) }}</td>
+            <td>{{ formatDate(loan.loanDate) }}</td>
+            <td>{{ formatDate(loan.returnDate) }}</td>
+          </tr>
+          <tr *ngIf="loans.length === 0">
+            <td colspan="5" class="text-center text-muted py-4">
+              Ingen aktive udlån matcher filtrene.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
