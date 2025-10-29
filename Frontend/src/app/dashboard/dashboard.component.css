@@ -11,11 +11,29 @@
   background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 202, 240, 0.1));
   text-align: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  color: inherit;
 }
 
 .status-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+button.status-card {
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+button.status-card:focus-visible {
+  outline: 3px solid rgba(13, 110, 253, 0.4);
+  outline-offset: 3px;
+}
+
+.status-card-link {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .status-name {
@@ -28,4 +46,19 @@
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
+}
+
+.status-empty {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.quick-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.emphasis-card {
+  background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(13, 202, 240, 0.08));
 }

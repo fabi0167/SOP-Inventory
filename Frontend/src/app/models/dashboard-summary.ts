@@ -6,4 +6,7 @@ export interface DashboardStatusCount {
 export interface DashboardSummary {
   totalItemCount: number;
   statusCounts: DashboardStatusCount[];
+  borrowedItemCount: number;
+  nonFunctionalItemCount: number;
+  activeLoanCount: number;
 }
