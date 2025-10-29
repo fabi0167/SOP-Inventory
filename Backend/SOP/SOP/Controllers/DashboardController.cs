@@ -13,6 +13,13 @@ namespace SOP.Controllers
     [ApiController]
     public class DashboardController : ControllerBase
     {
+        private static readonly HashSet<string> BorrowedStatusNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Udlånt",
+            "Udlejet",
+            "Loaned"
+        };
+
         private static readonly HashSet<string> NonFunctionalStatusNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "Gik stykker",
@@ -66,6 +73,10 @@ namespace SOP.Controllers
                 var totalCount = await _itemRepository.GetTotalCountAsync();
                 var activeLoanCount = await _loanRepository.GetActiveLoanCountAsync();
 
+                int borrowedCount = statusCounts
+                    .Where(status => BorrowedStatusNames.Contains(status.Status))
+                    .Sum(status => status.Count);
+
                 int nonFunctionalCount = statusCounts
                     .Where(status =>
                         NonFunctionalStatusNames.Contains(status.Status) ||
@@ -80,7 +91,7 @@ namespace SOP.Controllers
                 {
                     TotalItemCount = totalCount,
                     StatusCounts = statusCounts,
-                    BorrowedItemCount = activeLoanCount,
+                    BorrowedItemCount = borrowedCount,
                     NonFunctionalItemCount = nonFunctionalCount,
                     ActiveLoanCount = activeLoanCount
                 };
