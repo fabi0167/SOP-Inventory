@@ -18,8 +18,7 @@ export class DashboardComponent implements OnInit {
   isLoading = false;
   errorMessage: string | null = null;
 
-  private readonly borrowedStatusNames = new Set<string>(['Udlånt', 'Udlejet', 'Loaned']);
-  private readonly clickableStatuses = new Set<string>(['Virker', 'Gik stykker', 'Gik i stykker']);
+  private readonly borrowedStatusTokens = ['udlaant', 'udlaan', 'udlejet', 'loaned', 'borrowed'];
 
   constructor(
     private dashboardService: DashboardService,
@@ -67,11 +66,7 @@ export class DashboardComponent implements OnInit {
       return [];
     }
 
-    return this.summary.statusCounts.filter((status) => !this.borrowedStatusNames.has(status.status));
-  }
-
-  isStatusClickable(statusName: string): boolean {
-    return this.clickableStatuses.has(statusName);
+    return this.summary.statusCounts.filter((status) => !this.isBorrowedStatus(status.status));
   }
 
   goToStatusItems(statusName: string): void {
@@ -90,5 +85,23 @@ export class DashboardComponent implements OnInit {
     }
 
     return statusName;
+  }
+
+  private isBorrowedStatus(statusName: string): boolean {
+    const normalized = this.normalizeStatusName(statusName);
+
+    return this.borrowedStatusTokens.some((token) => normalized.includes(token));
+  }
+
+  private normalizeStatusName(statusName: string): string {
+    if (!statusName) {
+      return '';
+    }
+
+    return statusName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '')
+      .toLowerCase();
   }
 }

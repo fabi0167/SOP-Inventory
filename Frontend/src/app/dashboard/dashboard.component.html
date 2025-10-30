@@ -42,7 +42,6 @@
           <div class="status-grid">
             <ng-container *ngFor="let status of getStatusCounts(); trackBy: trackStatusBy">
               <button
-                *ngIf="isStatusClickable(status.status)"
                 type="button"
                 class="status-card status-card-link"
                 (click)="goToStatusItems(status.status)"
@@ -51,10 +50,6 @@
                 <p class="status-name">{{ getStatusDisplayName(status.status) }}</p>
                 <p class="status-count">{{ status.count }}</p>
               </button>
-              <div *ngIf="!isStatusClickable(status.status)" class="status-card">
-                <p class="status-name">{{ getStatusDisplayName(status.status) }}</p>
-                <p class="status-count">{{ status.count }}</p>
-              </div>
             </ng-container>
             <div *ngIf="getStatusCounts().length === 0" class="text-muted status-empty">
               Ingen statusdata tilgængelig.
