@@ -113,7 +113,7 @@ namespace SOP.Repositories
                 ItemId = itemId,
                 StatusId = status.Id,
                 StatusUpdateDate = DateTime.UtcNow,
-                Note = null,
+                Note = string.Empty,
             };
 
             _context.StatusHistory.Add(newHistory);
