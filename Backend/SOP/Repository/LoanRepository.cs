@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SOP.Database;
 using SOP.Entities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SOP.Repositories
@@ -251,11 +252,17 @@ namespace SOP.Repositories
         {
             string normalized = NormalizeStatusName(statusName);
 
-            Status? status = await _context.Status
-                .FirstOrDefaultAsync(s => NormalizeStatusName(s.Name) == normalized);
+            List<Status> statuses = await _context.Status.ToListAsync();
+
+            Status? status = statuses
+                .FirstOrDefault(s => NormalizeStatusName(s.Name ?? string.Empty) == normalized);
 
             if (status != null)
             {
+                if (_context.Entry(status).State == EntityState.Detached)
+                {
+                    _context.Status.Attach(status);
+                }
                 return status;
             }
 
