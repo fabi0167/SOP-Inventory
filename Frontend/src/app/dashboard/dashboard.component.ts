@@ -19,6 +19,16 @@ export class DashboardComponent implements OnInit {
   errorMessage: string | null = null;
 
   private readonly borrowedStatusTokens = ['udlaant', 'udlaan', 'udlejet', 'loaned', 'borrowed'];
+  private readonly nonFunctionalStatusTokens = ['ikke', 'defekt', 'skadet', 'service', 'reparation'];
+  private readonly nonFunctionalStatusNames = new Set([
+    'gikstykker',
+    'skadet',
+    'defekt',
+    'virkerikke',
+    'underservice',
+    'tilreparation',
+    'ireparation',
+  ]);
 
   constructor(
     private dashboardService: DashboardService,
@@ -70,7 +80,24 @@ export class DashboardComponent implements OnInit {
   }
 
   goToStatusItems(statusName: string): void {
+    if (this.isBorrowedStatus(statusName)) {
+      this.goToActiveLoans();
+      return;
+    }
+
     this.router.navigate(['/dashboard/status', statusName]);
+  }
+
+  goToNonFunctionalItems(): void {
+    const targetStatus = this.getStatusCounts().find((status) => this.isNonFunctionalStatus(status.status));
+
+    if (targetStatus) {
+      this.goToStatusItems(targetStatus.status);
+    }
+  }
+
+  hasNonFunctionalStatuses(): boolean {
+    return this.getStatusCounts().some((status) => this.isNonFunctionalStatus(status.status));
   }
 
   trackStatusBy(_index: number, status: DashboardStatusCount): string {
@@ -91,6 +118,16 @@ export class DashboardComponent implements OnInit {
     const normalized = this.normalizeStatusName(statusName);
 
     return this.borrowedStatusTokens.some((token) => normalized.includes(token));
+  }
+
+  private isNonFunctionalStatus(statusName: string): boolean {
+    const normalized = this.normalizeStatusName(statusName);
+
+    if (this.nonFunctionalStatusNames.has(normalized)) {
+      return true;
+    }
+
+    return this.nonFunctionalStatusTokens.some((token) => normalized.includes(token));
   }
 
   private normalizeStatusName(statusName: string): string {

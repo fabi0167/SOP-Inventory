@@ -26,10 +26,16 @@
               <p class="status-name">Aktive udlån</p>
               <p class="status-count">{{ summary.activeLoanCount }}</p>
             </button>
-            <div class="status-card warning-card quick-stat-card">
+            <button
+              type="button"
+              class="status-card status-card-link warning-card quick-stat-card"
+              (click)="goToNonFunctionalItems()"
+              [disabled]="!hasNonFunctionalStatuses()"
+            >
+              <span class="visually-hidden">Se genstande med ikke-fungerende status</span>
               <p class="status-name">Ikke-fungerende genstande</p>
               <p class="status-count">{{ summary.nonFunctionalItemCount }}</p>
-            </div>
+            </button>
           </div>
         </div>
       </div>
