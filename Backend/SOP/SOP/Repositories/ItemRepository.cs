@@ -2,6 +2,10 @@
 using SOP.Database;
 using SOP.Archive.DTOs;
 using SOP.Archive.Entities;
+using SOP.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SOP.Repositories
 {
@@ -28,10 +32,25 @@ namespace SOP.Repositories
         // Adds a new Item, saves changes, retrieves, and returns it
         public async Task<Item> CreateAsync(Item newItem)
         {
-            _context.Item.Add(newItem);
-            await _context.SaveChangesAsync();
-            newItem = await FindByIdAsync(newItem.Id);
-            return newItem;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                _context.Item.Add(newItem);
+                await _context.SaveChangesAsync();
+
+                await SetItemStatusAsync(newItem.Id, DefaultAvailableStatusName);
+
+                await transaction.CommitAsync();
+
+                newItem = await FindByIdAsync(newItem.Id);
+                return newItem;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         // Please refer to the class diagram or ER diagram for entity relationships
@@ -69,6 +88,73 @@ namespace SOP.Repositories
         public async Task<int> GetTotalCountAsync()
         {
             return await _context.Item.CountAsync();
+        }
+
+        private const string DefaultAvailableStatusName = "Virker";
+
+        private async Task SetItemStatusAsync(int itemId, string statusName)
+        {
+            var status = await GetOrCreateStatusAsync(statusName);
+
+            int? latestStatusId = await _context.StatusHistory
+                .Where(history => history.ItemId == itemId)
+                .OrderByDescending(history => history.StatusUpdateDate)
+                .ThenByDescending(history => history.Id)
+                .Select(history => (int?)history.StatusId)
+                .FirstOrDefaultAsync();
+
+            if (latestStatusId == status.Id)
+            {
+                return;
+            }
+
+            StatusHistory newHistory = new StatusHistory
+            {
+                ItemId = itemId,
+                StatusId = status.Id,
+                StatusUpdateDate = DateTime.UtcNow,
+                Note = null,
+            };
+
+            _context.StatusHistory.Add(newHistory);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<Status> GetOrCreateStatusAsync(string statusName)
+        {
+            string normalized = NormalizeStatusName(statusName);
+
+            List<Status> statuses = await _context.Status.ToListAsync();
+
+            Status? status = statuses
+                .FirstOrDefault(s => NormalizeStatusName(s.Name ?? string.Empty) == normalized);
+
+            if (status != null)
+            {
+                if (_context.Entry(status).State == EntityState.Detached)
+                {
+                    _context.Status.Attach(status);
+                }
+                return status;
+            }
+
+            status = new Status
+            {
+                Name = statusName.Trim()
+            };
+
+            _context.Status.Add(status);
+            await _context.SaveChangesAsync();
+
+            return status;
+        }
+
+        private static string NormalizeStatusName(string statusName)
+        {
+            return new string(statusName
+                .Where(c => !char.IsWhiteSpace(c))
+                .Select(char.ToLowerInvariant)
+                .ToArray());
         }
 
         // Updates a Item by ID and returns the updated entity

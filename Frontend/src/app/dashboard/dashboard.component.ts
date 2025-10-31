@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { DashboardService } from '../services/dashboard.service';
-import { DashboardSummary } from '../models/dashboard-summary';
+import { DashboardSummary, DashboardStatusCount } from '../models/dashboard-summary';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,22 @@ export class DashboardComponent implements OnInit {
   isLoading = false;
   errorMessage: string | null = null;
 
-  constructor(private dashboardService: DashboardService) { }
+  private readonly borrowedStatusTokens = ['udlaant', 'udlaan', 'udlejet', 'loaned', 'borrowed'];
+  private readonly nonFunctionalStatusTokens = ['ikke', 'defekt', 'skadet', 'service', 'reparation'];
+  private readonly nonFunctionalStatusNames = new Set([
+    'gikstykker',
+    'skadet',
+    'defekt',
+    'virkerikke',
+    'underservice',
+    'tilreparation',
+    'ireparation',
+  ]);
+
+  constructor(
+    private dashboardService: DashboardService,
+    private router: Router,
+  ) { }
 
   ngOnInit(): void {
     this.loadSummary();
@@ -49,5 +65,80 @@ export class DashboardComponent implements OnInit {
     }
 
     return 'Der opstod en fejl under hentning af dashboarddata.';
+  }
+
+  goToActiveLoans(): void {
+    this.router.navigate(['/dashboard/active-loans']);
+  }
+
+  getStatusCounts(): DashboardStatusCount[] {
+    if (!this.summary) {
+      return [];
+    }
+
+    return this.summary.statusCounts.filter((status) => !this.isBorrowedStatus(status.status));
+  }
+
+  goToStatusItems(statusName: string): void {
+    if (this.isBorrowedStatus(statusName)) {
+      this.goToActiveLoans();
+      return;
+    }
+
+    this.router.navigate(['/dashboard/status', statusName]);
+  }
+
+  goToNonFunctionalItems(): void {
+    const targetStatus = this.getStatusCounts().find((status) => this.isNonFunctionalStatus(status.status));
+
+    if (targetStatus) {
+      this.goToStatusItems(targetStatus.status);
+    }
+  }
+
+  hasNonFunctionalStatuses(): boolean {
+    return this.getStatusCounts().some((status) => this.isNonFunctionalStatus(status.status));
+  }
+
+  trackStatusBy(_index: number, status: DashboardStatusCount): string {
+    return status.status;
+  }
+
+  getStatusDisplayName(statusName: string): string {
+    const normalized = statusName.trim().toLowerCase();
+
+    if (normalized.replace(/\s+/g, '') === 'gikstykker') {
+      return 'Gik i stykker';
+    }
+
+    return statusName;
+  }
+
+  private isBorrowedStatus(statusName: string): boolean {
+    const normalized = this.normalizeStatusName(statusName);
+
+    return this.borrowedStatusTokens.some((token) => normalized.includes(token));
+  }
+
+  private isNonFunctionalStatus(statusName: string): boolean {
+    const normalized = this.normalizeStatusName(statusName);
+
+    if (this.nonFunctionalStatusNames.has(normalized)) {
+      return true;
+    }
+
+    return this.nonFunctionalStatusTokens.some((token) => normalized.includes(token));
+  }
+
+  private normalizeStatusName(statusName: string): string {
+    if (!statusName) {
+      return '';
+    }
+
+    return statusName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '')
+      .toLowerCase();
   }
 }
