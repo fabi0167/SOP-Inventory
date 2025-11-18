@@ -1,0 +1,17 @@
+.empty-message {
+  padding: 1rem;
+}
+
+.badge {
+  font-size: 0.9rem;
+}
+
+.table td,
+.table th {
+  white-space: nowrap;
+}
+
+.table td:last-child,
+.table th:last-child {
+  text-align: center;
+}
