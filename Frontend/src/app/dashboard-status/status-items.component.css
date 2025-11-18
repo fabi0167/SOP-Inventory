@@ -1,0 +1,17 @@
+.empty-message {
+  padding: 1rem 0;
+}
+
+.table th {
+  white-space: nowrap;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+@media (max-width: 576px) {
+  .d-flex h2 {
+    font-size: 1.5rem;
+  }
+}

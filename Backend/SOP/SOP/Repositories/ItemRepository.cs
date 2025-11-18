@@ -2,6 +2,10 @@
 using SOP.Database;
 using SOP.Archive.DTOs;
 using SOP.Archive.Entities;
+using SOP.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SOP.Repositories
 {
@@ -28,10 +32,25 @@ namespace SOP.Repositories
         // Adds a new Item, saves changes, retrieves, and returns it
         public async Task<Item> CreateAsync(Item newItem)
         {
-            _context.Item.Add(newItem);
-            await _context.SaveChangesAsync();
-            newItem = await FindByIdAsync(newItem.Id);
-            return newItem;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                _context.Item.Add(newItem);
+                await _context.SaveChangesAsync();
+
+                await SetItemStatusAsync(newItem.Id, DefaultAvailableStatusName);
+
+                await transaction.CommitAsync();
+
+                newItem = await FindByIdAsync(newItem.Id);
+                return newItem;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         // Please refer to the class diagram or ER diagram for entity relationships
