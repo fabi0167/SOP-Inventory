@@ -5,11 +5,12 @@ import { NavbarComponent } from '../navbar/navbar.component';
 import { DashboardService } from '../services/dashboard.service';
 import { DashboardSummary, DashboardStatusCount } from '../models/dashboard-summary';
 import { Router } from '@angular/router';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, NavbarComponent],
+  imports: [CommonModule, NavbarComponent, NgxChartsModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
