@@ -1,4 +1,8 @@
-﻿using SOP.Archive.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using SOP.Archive.DTOs;
+using SOP.Archive.Entities;
+using SOP.Database;
+using SOP.Entities;
 
 namespace SOP.Repositories
 {
@@ -9,9 +13,11 @@ namespace SOP.Repositories
         Task<Item?> UpdateByIdAsync(int itemId, Item updateItem);
         Task<Archive_Item?> ArchiveByIdAsync(int itemId, string archiveNote);
         Task<List<Item>> GetAllAsync();
+        Task<int> GetTotalCountAsync();
     }
     public class ItemRepository : IItemRepository
     {
+        private const string DefaultAvailableStatusName = "Virker";
         private readonly DatabaseContext _context;
 
         public ItemRepository(DatabaseContext context)
@@ -21,14 +27,26 @@ namespace SOP.Repositories
 
         public async Task<Item> CreateAsync(Item newItem)
         {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            _context.Item.Add(newItem);
+            try
+            {
+                _context.Item.Add(newItem);
+                await _context.SaveChangesAsync();
 
-            await _context.SaveChangesAsync();
+                await SetItemStatusAsync(newItem.Id, DefaultAvailableStatusName);
 
-            newItem = await FindByIdAsync(newItem.Id);
+                await transaction.CommitAsync();
 
-            return newItem;
+                newItem = await FindByIdAsync(newItem.Id);
+
+                return newItem;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<Item?> FindByIdAsync(int itemId)
@@ -57,6 +75,11 @@ namespace SOP.Repositories
                 .ThenInclude(b => b.Address)
                 .Include(i => i.Loan)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetTotalCountAsync()
+        {
+            return await _context.Item.CountAsync();
         }
  
         public async Task<Item?> UpdateByIdAsync(int itemId, Item updateItem)
@@ -121,6 +144,28 @@ namespace SOP.Repositories
             }
 
             return archiveItem;
+        }
+
+        private async Task SetItemStatusAsync(int itemId, string statusName)
+        {
+            var status = await _context.Status.FirstOrDefaultAsync(s => s.Name == statusName)
+                         ?? await _context.Status.OrderBy(s => s.Id).FirstOrDefaultAsync();
+
+            if (status == null)
+            {
+                throw new InvalidOperationException("No status entries are configured in the database.");
+            }
+
+            var statusHistory = new StatusHistory
+            {
+                ItemId = itemId,
+                StatusId = status.Id,
+                StatusUpdateDate = DateTime.UtcNow,
+                Note = $"Initial status sat til {status.Name}"
+            };
+
+            _context.StatusHistory.Add(statusHistory);
+            await _context.SaveChangesAsync();
         }
 
     }

@@ -2,6 +2,7 @@
 using SOP.Database;
 using SOP.Archive.DTOs;
 using SOP.Archive.Entities;
+using SOP.Entities;
 
 namespace SOP.Repositories
 {
@@ -12,10 +13,12 @@ namespace SOP.Repositories
         Task<Item?> UpdateByIdAsync(int itemId, Item updateItem);
         Task<Archive_Item?> ArchiveByIdAsync(int itemId, string archiveNote);
         Task<List<Item>> GetAllAsync();
+        Task<int> GetTotalCountAsync();
     }
 
     public class ItemRepository : IItemRepository
     {
+        private const string DefaultAvailableStatusName = "Virker";
         private readonly DatabaseContext _context;
 
         // Initializes the repository with the database context for accessing data
@@ -27,10 +30,24 @@ namespace SOP.Repositories
         // Adds a new Item, saves changes, retrieves, and returns it
         public async Task<Item> CreateAsync(Item newItem)
         {
-            _context.Item.Add(newItem);
-            await _context.SaveChangesAsync();
-            newItem = await FindByIdAsync(newItem.Id);
-            return newItem;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                _context.Item.Add(newItem);
+                await _context.SaveChangesAsync();
+
+                await SetItemStatusAsync(newItem.Id, DefaultAvailableStatusName);
+
+                await transaction.CommitAsync();
+                newItem = await FindByIdAsync(newItem.Id);
+                return newItem;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         // Please refer to the class diagram or ER diagram for entity relationships
@@ -63,6 +80,11 @@ namespace SOP.Repositories
                 .ThenInclude(b => b.Address)
                 .Include(i => i.Loan)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetTotalCountAsync()
+        {
+            return await _context.Item.CountAsync();
         }
 
         // Updates a Item by ID and returns the updated entity
@@ -124,6 +146,28 @@ namespace SOP.Repositories
             await _context.SaveChangesAsync();
 
             return archiveItem;
+        }
+
+        private async Task SetItemStatusAsync(int itemId, string statusName)
+        {
+            var status = await _context.Status.FirstOrDefaultAsync(s => s.Name == statusName)
+                         ?? await _context.Status.OrderBy(s => s.Id).FirstOrDefaultAsync();
+
+            if (status == null)
+            {
+                throw new InvalidOperationException("No status entries are configured in the database.");
+            }
+
+            var statusHistory = new StatusHistory
+            {
+                ItemId = itemId,
+                StatusId = status.Id,
+                StatusUpdateDate = DateTime.UtcNow,
+                Note = $"Initial status sat til {status.Name}"
+            };
+
+            _context.StatusHistory.Add(statusHistory);
+            await _context.SaveChangesAsync();
         }
     }
 }
