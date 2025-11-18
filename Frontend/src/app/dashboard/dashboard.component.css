@@ -82,57 +82,23 @@ button.status-card:focus-visible {
 
 .status-chart {
   display: flex;
-  justify-content: center;
-  padding: 0.5rem 0;
-}
-
-.chart-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 1.25rem;
-  width: 100%;
-  max-width: 720px;
-  min-height: 240px;
-  padding: 0 0.5rem;
-}
-
-.chart-bar {
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 80px;
+  gap: 0.75rem;
 }
 
-.bar {
-  position: relative;
-  width: 100%;
-  max-width: 110px;
-  height: 200px;
-  border-radius: 0.75rem 0.75rem 0.25rem 0.25rem;
-  background: linear-gradient(180deg, rgba(13, 110, 253, 0.08), rgba(13, 202, 240, 0.08));
+.chart-row {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  overflow: hidden;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.bar-fill {
-  width: 100%;
-  border-radius: 0.75rem 0.75rem 0 0;
-  transition: height 0.25s ease;
-  min-height: 0.35rem;
-}
-
-.bar-value {
-  font-weight: 700;
-  color: #0d6efd;
-}
-
-.bar-label {
+.chart-label {
+  width: 160px;
   font-weight: 600;
-  text-align: center;
+}
+
+.progress {
+  height: 1.5rem;
 }
 
 @media (max-width: 576px) {
@@ -140,12 +106,7 @@ button.status-card:focus-visible {
     min-height: 110px;
   }
 
-  .chart-bars {
-    gap: 0.75rem;
-    min-height: 200px;
-  }
-
-  .chart-bar {
-    min-width: 64px;
+  .chart-label {
+    width: 120px;
   }
 }
