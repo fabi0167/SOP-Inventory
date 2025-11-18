@@ -1,0 +1,93 @@
+<app-navbar></app-navbar>
+
+<div class="container mt-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h2 class="mb-0">Alle genstande</h2>
+      <p class="text-muted mb-0">Filtrer efter status, gruppe eller type</p>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" routerLink="/dashboard">
+      Tilbage til dashboard
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="alert alert-info" role="alert">
+    Indlæser genstande...
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    {{ errorMessage }}
+  </div>
+
+  <div class="card shadow-sm" *ngIf="!isLoading && !errorMessage">
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6 col-lg-3">
+          <label class="form-label">Status</label>
+          <select class="form-select" [(ngModel)]="statusFilter" (change)="applyFilters()">
+            <option value="alle">Alle</option>
+            <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+          <label class="form-label">Genstandsgruppe</label>
+          <select class="form-select" [(ngModel)]="groupFilter" (change)="applyFilters()">
+            <option value="alle">Alle</option>
+            <option *ngFor="let group of groupOptions" [ngValue]="group.id">{{ group.name }}</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+          <label class="form-label">Genstandstype</label>
+          <select class="form-select" [(ngModel)]="typeFilter" (change)="applyFilters()">
+            <option value="alle">Alle</option>
+            <option *ngFor="let type of typeOptions" [ngValue]="type.id">{{ type.name }}</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+          <label class="form-label">Søg</label>
+          <input class="form-control" type="search" placeholder="Serie nr., gruppe eller type" [(ngModel)]="searchTerm"
+            (input)="applyFilters()">
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-primary btn-sm" (click)="applyFilters()">Anvend filtre</button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="resetFilters()">Nulstil</button>
+      </div>
+
+      <div *ngIf="filteredRows.length === 0" class="text-muted">Ingen genstande matcher filtrene.</div>
+
+      <div class="table-responsive" *ngIf="filteredRows.length > 0">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Serienummer</th>
+              <th>Gruppe</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Handling</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredRows">
+              <td>{{ row.item.id }}</td>
+              <td>{{ row.item.serialNumber || '—' }}</td>
+              <td>{{ row.itemGroupName }}</td>
+              <td>{{ row.itemTypeName }}</td>
+              <td>
+                <span class="badge bg-info text-dark">{{ row.latestStatus }}</span>
+              </td>
+              <td>
+                <button class="btn btn-link p-0" (click)="navigateToItem(row.item.id)">Detaljer</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

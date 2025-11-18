@@ -11,42 +11,11 @@
   background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 202, 240, 0.1));
   text-align: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  color: inherit;
 }
 
 .status-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-}
-
-.status-card.quick-stat-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: 140px;
-}
-
-button.status-card {
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(13, 202, 240, 0.1));
-}
-
-button.status-card[disabled] {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-button.status-card:focus-visible {
-  outline: 3px solid rgba(13, 110, 253, 0.4);
-  outline-offset: 3px;
-}
-
-.status-card-link {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .status-name {
@@ -61,27 +30,54 @@ button.status-card:focus-visible {
   margin: 0;
 }
 
-.status-empty {
-  grid-column: 1 / -1;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  background-color: rgba(0, 0, 0, 0.03);
+.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.quick-stats-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
-.emphasis-card {
-  background: linear-gradient(135deg, rgba(13, 110, 253, 0.15), rgba(13, 202, 240, 0.12));
+.status-chart {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 1rem;
 }
 
-.warning-card {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.18), rgba(255, 87, 34, 0.12));
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-@media (max-width: 576px) {
-  .status-card.quick-stat-card {
-    min-height: 110px;
-  }
+.chart-label {
+  font-weight: 600;
+  color: #0d6efd;
+}
+
+.chart-bar-wrapper {
+  background-color: rgba(13, 110, 253, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  min-height: 30px;
+}
+
+.chart-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0d6efd, #13c2e8);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  font-weight: 700;
+  min-width: 32px;
+}
+
+.chart-value {
+  font-size: 0.95rem;
 }
