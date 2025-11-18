@@ -18,16 +18,8 @@ export class DashboardComponent implements OnInit {
   summary: DashboardSummary | null = null;
   isLoading = false;
   errorMessage: string | null = null;
-  chartData: { name: string; value: number }[] = [];
-  chartCustomColors = [
-    { name: 'Samlet antal', value: '#0d6efd' },
-    { name: 'Tilgængelige', value: '#198754' },
-    { name: 'Udlånte', value: '#0dcaf0' },
-    { name: 'Ikke-fungerende', value: '#ffc107' },
-  ];
-  chartColorScheme = {
-    domain: ['#0d6efd', '#198754', '#0dcaf0', '#ffc107']
-  };
+  chartData: { label: string; value: number; variant: string }[] = [];
+  maxChartValue = 0;
 
   private readonly borrowedStatusTokens = ['udlaant', 'udlaan', 'udlejet', 'loaned', 'borrowed'];
   private readonly nonFunctionalStatusTokens = ['ikke', 'defekt', 'skadet', 'service', 'reparation'];
@@ -136,6 +128,15 @@ export class DashboardComponent implements OnInit {
     return this.borrowedStatusTokens.some((token) => normalized.includes(token));
   }
 
+  getBarWidth(value: number): string {
+    if (this.maxChartValue === 0) {
+      return '0%';
+    }
+
+    const width = (value / this.maxChartValue) * 100;
+    return `${width.toFixed(1)}%`;
+  }
+
   private isNonFunctionalStatus(statusName: string): boolean {
     const normalized = this.normalizeStatusName(statusName);
 
@@ -160,11 +161,20 @@ export class DashboardComponent implements OnInit {
 
   private updateChartData(summary: DashboardSummary): void {
     const availableCount = Math.max(summary.totalItemCount - summary.activeLoanCount, 0);
+
+    this.maxChartValue = Math.max(
+      summary.totalItemCount,
+      availableCount,
+      summary.activeLoanCount,
+      summary.nonFunctionalItemCount,
+      1,
+    );
+
     this.chartData = [
-      { name: 'Samlet antal', value: summary.totalItemCount },
-      { name: 'Tilgængelige', value: availableCount },
-      { name: 'Udlånte', value: summary.activeLoanCount },
-      { name: 'Ikke-fungerende', value: summary.nonFunctionalItemCount },
+      { label: 'Samlet antal', value: summary.totalItemCount, variant: 'primary' },
+      { label: 'Tilgængelige', value: availableCount, variant: 'success' },
+      { label: 'Udlånte', value: summary.activeLoanCount, variant: 'info' },
+      { label: 'Ikke-fungerende', value: summary.nonFunctionalItemCount, variant: 'warning' },
     ];
   }
 }
