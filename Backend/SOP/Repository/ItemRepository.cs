@@ -9,6 +9,7 @@ namespace SOP.Repositories
         Task<Item?> UpdateByIdAsync(int itemId, Item updateItem);
         Task<Archive_Item?> ArchiveByIdAsync(int itemId, string archiveNote);
         Task<List<Item>> GetAllAsync();
+        Task<int> GetTotalCountAsync();
     }
     public class ItemRepository : IItemRepository
     {
@@ -57,6 +58,11 @@ namespace SOP.Repositories
                 .ThenInclude(b => b.Address)
                 .Include(i => i.Loan)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetTotalCountAsync()
+        {
+            return await _context.Item.CountAsync();
         }
  
         public async Task<Item?> UpdateByIdAsync(int itemId, Item updateItem)
