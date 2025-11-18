@@ -17,10 +17,11 @@
         <div class="card-body">
           <h5 class="card-title">Hurtigt overblik</h5>
           <div class="status-grid quick-stats-grid">
-            <div class="status-card emphasis-card quick-stat-card">
+            <button type="button" class="status-card status-card-link emphasis-card quick-stat-card" (click)="goToAllItems()">
+              <span class="visually-hidden">Gå til alle genstande</span>
               <p class="status-name">Samlet antal genstande</p>
               <p class="status-count">{{ summary.totalItemCount }}</p>
-            </div>
+            </button>
             <button type="button" class="status-card status-card-link quick-stat-card" (click)="goToActiveLoans()">
               <span class="visually-hidden">Gå til aktive udlån</span>
               <p class="status-name">Aktive udlån</p>
@@ -60,6 +61,27 @@
             <div *ngIf="getStatusCounts().length === 0" class="text-muted status-empty">
               Ingen statusdata tilgængelig.
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Genstande efter status (diagram)</h5>
+          <div *ngIf="chartData.length > 0" class="status-chart" role="img" aria-label="Søjlediagram over genstandes tilstande">
+            <div *ngFor="let bar of chartData" class="chart-row">
+              <div class="chart-label">{{ bar.label }}</div>
+              <div class="progress flex-grow-1">
+                <div class="progress-bar" [class]="'progress-bar bg-' + bar.variant" [style.width]="getBarWidth(bar.value)">
+                  {{ bar.value }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="chartData.length === 0" class="text-muted status-empty">
+            Ingen data til diagrammet.
           </div>
         </div>
       </div>

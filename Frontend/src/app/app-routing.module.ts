@@ -34,6 +34,7 @@ import { PartTypeComponent } from './part-type/part-type.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ActiveLoansComponent } from './loan-active/active-loans.component';
 import { StatusItemsComponent } from './dashboard-status/status-items.component';
+import { DashboardItemsComponent } from './dashboard-items/dashboard-items.component';
 
 export const routes: Routes = [
   //Default route
@@ -76,6 +77,12 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [1, 2, 4] },
+  },
+  {
+    path: 'dashboard/items',
+    component: DashboardItemsComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: [1, 2, 4] },
   },
