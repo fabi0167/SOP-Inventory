@@ -6,6 +6,7 @@ using SOP.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SOP.Controllers
 {
@@ -22,6 +23,15 @@ namespace SOP.Controllers
             "Under service",
             "Til reparation",
             "I reparation"
+        };
+
+        private static readonly string[] NonFunctionalStatusTokens =
+        {
+            "ikke",
+            "defekt",
+            "skadet",
+            "service",
+            "reparation",
         };
 
         private readonly IStatusHistoryRepository _statusHistoryRepository;
@@ -94,6 +104,91 @@ namespace SOP.Controllers
         }
 
         [Authorize("Admin", "Instruktør", "Drift")]
+        [HttpGet("items-overview")]
+        public async Task<IActionResult> GetItemsOverviewAsync(
+            [FromQuery] string? statusCategory = null,
+            [FromQuery] int? itemGroupId = null,
+            [FromQuery] int? itemTypeId = null,
+            [FromQuery] string? search = null)
+        {
+            try
+            {
+                var items = await _itemRepository.GetAllAsync();
+
+                IEnumerable<DashboardItemOverviewResponse> responses = items
+                    .Select(item =>
+                    {
+                        var latestStatus = item.StatusHistories?
+                            .OrderByDescending(history => history.StatusUpdateDate)
+                            .ThenByDescending(history => history.Id)
+                            .FirstOrDefault();
+
+                        string statusName = latestStatus?.Status?.Name ?? "Ukendt";
+
+                        return new DashboardItemOverviewResponse
+                        {
+                            ItemId = item.Id,
+                            SerialNumber = item.SerialNumber,
+                            ItemGroupId = item.ItemGroup?.Id,
+                            ItemGroupName = item.ItemGroup?.ModelName,
+                            ItemTypeId = item.ItemGroup?.ItemType?.Id,
+                            ItemTypeName = item.ItemGroup?.ItemType?.TypeName,
+                            RoomName = BuildRoomName(item),
+                            StatusName = statusName,
+                            StatusUpdatedAt = latestStatus?.StatusUpdateDate,
+                            StatusNote = latestStatus?.Note,
+                            IsFunctional = !IsNonFunctionalStatus(statusName),
+                        };
+                    });
+
+                if (!string.IsNullOrWhiteSpace(statusCategory))
+                {
+                    string normalizedCategory = statusCategory.Trim().ToLowerInvariant();
+
+                    responses = normalizedCategory switch
+                    {
+                        "functional" => responses.Where(item => item.IsFunctional),
+                        "nonfunctional" => responses.Where(item => !item.IsFunctional),
+                        _ => responses,
+                    };
+                }
+
+                if (itemGroupId.HasValue)
+                {
+                    responses = responses.Where(item => item.ItemGroupId == itemGroupId.Value);
+                }
+
+                if (itemTypeId.HasValue)
+                {
+                    responses = responses.Where(item => item.ItemTypeId == itemTypeId.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    string trimmedSearch = search.Trim();
+
+                    responses = responses.Where(item =>
+                        (!string.IsNullOrWhiteSpace(item.SerialNumber) && item.SerialNumber!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(item.ItemGroupName) && item.ItemGroupName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(item.ItemTypeName) && item.ItemTypeName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(item.RoomName) && item.RoomName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(item.StatusName) && item.StatusName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)));
+                }
+
+                var orderedResponses = responses
+                    .OrderByDescending(item => item.StatusUpdatedAt)
+                    .ThenBy(item => item.SerialNumber)
+                    .ToList();
+
+                return Ok(orderedResponses);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
+
+        [Authorize("Admin", "Instruktør", "Drift")]
         [HttpGet("status-items")]
         public async Task<IActionResult> GetItemsByStatusAsync([FromQuery] string status, [FromQuery] string? search = null)
         {
@@ -158,6 +253,29 @@ namespace SOP.Controllers
             return string.IsNullOrWhiteSpace(statusName)
                 ? string.Empty
                 : new string(statusName.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
+        }
+
+        private static bool IsNonFunctionalStatus(string? statusName)
+        {
+            if (string.IsNullOrWhiteSpace(statusName))
+            {
+                return false;
+            }
+
+            string normalizedStatus = NormalizeStatusName(statusName);
+
+            if (NonFunctionalStatusNames.Any(name => NormalizeStatusName(name) == normalizedStatus))
+            {
+                return true;
+            }
+
+            if (NonFunctionalStatusNames.Any(name =>
+                NormalizeStatusName(name) != normalizedStatus && statusName.Contains(name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            return NonFunctionalStatusTokens.Any(token => normalizedStatus.Contains(token));
         }
 
         private static string? BuildRoomName(Item item)

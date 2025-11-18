@@ -17,6 +17,8 @@ export class DashboardComponent implements OnInit {
   summary: DashboardSummary | null = null;
   isLoading = false;
   errorMessage: string | null = null;
+  chartData: { label: string; value: number; variant: string }[] = [];
+  maxChartValue = 0;
 
   private readonly borrowedStatusTokens = ['udlaant', 'udlaan', 'udlejet', 'loaned', 'borrowed'];
   private readonly nonFunctionalStatusTokens = ['ikke', 'defekt', 'skadet', 'service', 'reparation'];
@@ -46,6 +48,7 @@ export class DashboardComponent implements OnInit {
     this.dashboardService.getStatusSummary().subscribe({
       next: (summary) => {
         this.summary = summary;
+        this.updateChartData(summary);
         this.isLoading = false;
       },
       error: (error: HttpErrorResponse) => {
@@ -69,6 +72,10 @@ export class DashboardComponent implements OnInit {
 
   goToActiveLoans(): void {
     this.router.navigate(['/dashboard/active-loans']);
+  }
+
+  goToAllItems(): void {
+    this.router.navigate(['/dashboard/items']);
   }
 
   getStatusCounts(): DashboardStatusCount[] {
@@ -120,6 +127,15 @@ export class DashboardComponent implements OnInit {
     return this.borrowedStatusTokens.some((token) => normalized.includes(token));
   }
 
+  getBarWidth(value: number): string {
+    if (this.maxChartValue === 0) {
+      return '0%';
+    }
+
+    const width = (value / this.maxChartValue) * 100;
+    return `${width.toFixed(1)}%`;
+  }
+
   private isNonFunctionalStatus(statusName: string): boolean {
     const normalized = this.normalizeStatusName(statusName);
 
@@ -140,5 +156,24 @@ export class DashboardComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '')
       .toLowerCase();
+  }
+
+  private updateChartData(summary: DashboardSummary): void {
+    const availableCount = Math.max(summary.totalItemCount - summary.activeLoanCount, 0);
+
+    this.maxChartValue = Math.max(
+      summary.totalItemCount,
+      availableCount,
+      summary.activeLoanCount,
+      summary.nonFunctionalItemCount,
+      1,
+    );
+
+    this.chartData = [
+      { label: 'Samlet antal', value: summary.totalItemCount, variant: 'primary' },
+      { label: 'Tilgængelige', value: availableCount, variant: 'success' },
+      { label: 'Udlånte', value: summary.activeLoanCount, variant: 'info' },
+      { label: 'Ikke-fungerende', value: summary.nonFunctionalItemCount, variant: 'warning' },
+    ];
   }
 }
