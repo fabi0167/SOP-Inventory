@@ -1,0 +1,2207 @@
+diff --git a/Backend/SOP/Repository/LoanRepository.cs b/Backend/SOP/Repository/LoanRepository.cs
+index 4779bb872110fb085882228a9f86838ce508ad37..aaa46d1adb35c34dcc180ba1d53c4d09a43df219 100644
+--- a/Backend/SOP/Repository/LoanRepository.cs
++++ b/Backend/SOP/Repository/LoanRepository.cs
+@@ -1,95 +1,281 @@
+-﻿using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore;
+ using SOP.Database;
+ using SOP.Entities;
++using System;
++using System.Linq;
+ 
+ namespace SOP.Repositories
+ {
+     public interface ILoanRepository
+     {
+         Task<List<Loan>> GetAllAsync();
+         Task<Loan> CreateAsync(Loan loan);
+-        Task<Loan> FindByIdAsync(int id);
+-        Task<Loan> UpdateByIdAsync(int id, Loan loan);
+-        Task<Archive_Loan> ArchiveByIdAsync(int id, string archiveNote);
++        Task<Loan?> FindByIdAsync(int id);
++        Task<Loan?> UpdateByIdAsync(int id, Loan loan);
++        Task<Archive_Loan?> ArchiveByIdAsync(int id, string archiveNote);
++        Task<int> GetActiveLoanCountAsync();
++        Task<List<Loan>> GetActiveLoansAsync(
++            int? borrowerId,
++            int? approverId,
++            int? itemId,
++            DateTime? loanDateFrom,
++            DateTime? loanDateTo,
++            string? searchTerm);
+     }
++
+     public class LoanRepository : ILoanRepository
+     {
+         private readonly DatabaseContext _context;
+ 
++        private const string BorrowedStatusName = "Udlånt";
++        private const string AvailableStatusName = "Virker";
++
+         public LoanRepository(DatabaseContext context)
+         {
+             _context = context;
+         }
+ 
+         public async Task<List<Loan>> GetAllAsync()
+         {
+             return await _context.Loan
+                 .Include(x => x.Borrower)
+                 .Include(x => x.Approver)
+                 .Include(x => x.Item)
+                 .ToListAsync();
+         }
+ 
+         public async Task<Loan> CreateAsync(Loan newLoan)
+         {
+-            _context.Loan.Add(newLoan);
+-            await _context.SaveChangesAsync();
+-            return newLoan;
++            await using var transaction = await _context.Database.BeginTransactionAsync();
++
++            try
++            {
++                _context.Loan.Add(newLoan);
++                await _context.SaveChangesAsync();
++
++                await SetItemStatusAsync(newLoan.ItemId, BorrowedStatusName);
++
++                await transaction.CommitAsync();
++
++                return await FindByIdAsync(newLoan.Id) ?? newLoan;
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
++            }
+         }
+ 
+         public async Task<Loan?> FindByIdAsync(int loanId)
+         {
+             return await _context.Loan
+                 .Include(x => x.Borrower)
+                 .Include(x => x.Approver)
+                 .Include(x => x.Item)
+                 .FirstOrDefaultAsync(x => x.Id == loanId);
+         }
+ 
+-        public async Task<Loan> UpdateByIdAsync(int id, Loan newLoan)
++        public async Task<Loan?> UpdateByIdAsync(int id, Loan newLoan)
+         {
+-            var loan = await FindByIdAsync(id);
++            await using var transaction = await _context.Database.BeginTransactionAsync();
+ 
+-            if (loan != null)
++            try
+             {
++                var loan = await FindByIdAsync(id);
++
++                if (loan == null)
++                {
++                    return null;
++                }
++
++                int previousItemId = loan.ItemId;
++
+                 loan.ReturnDate = newLoan.ReturnDate;
+                 loan.LoanDate = newLoan.LoanDate;
+                 loan.BorrowerId = newLoan.BorrowerId;
+                 loan.ApproverId = newLoan.ApproverId;
+                 loan.ItemId = newLoan.ItemId;
+ 
+                 await _context.SaveChangesAsync();
+ 
+-                loan = await FindByIdAsync(id);
++                await SetItemStatusAsync(loan.ItemId, BorrowedStatusName);
++
++                if (previousItemId != loan.ItemId)
++                {
++                    await SetItemStatusAsync(previousItemId, AvailableStatusName);
++                }
++
++                await transaction.CommitAsync();
++
++                return await FindByIdAsync(id);
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
+             }
+-            return loan;
+         }
+ 
+-        public async Task<Archive_Loan> ArchiveByIdAsync(int loanId, string archiveNote)
++        public async Task<Archive_Loan?> ArchiveByIdAsync(int loanId, string archiveNote)
+         {
+-            var loan = await FindByIdAsync(loanId);
+-            if (loan == null)
+-            {
+-                return null;
+-            }
+-            Archive_Loan archiveLoan = new Archive_Loan
+-            {
+-                Id = loan.Id,
+-                DeleteTime = DateTime.Now,
+-                BorrowerId = loan.BorrowerId,
+-                ApproverId = loan.ApproverId != 0 ? loan.ApproverId : loan.BorrowerId,
+-                ItemId = loan.ItemId,
+-                LoanDate = loan.LoanDate,
+-                ReturnDate = loan.ReturnDate,
+-                ArchiveNote = archiveNote,
+-            };
+-            if (loan != null)
++            await using var transaction = await _context.Database.BeginTransactionAsync();
++
++            try
+             {
++                var loan = await FindByIdAsync(loanId);
++                if (loan == null)
++                {
++                    return null;
++                }
++
++                int itemId = loan.ItemId;
++
++                Archive_Loan archiveLoan = new Archive_Loan
++                {
++                    Id = loan.Id,
++                    DeleteTime = DateTime.Now,
++                    BorrowerId = loan.BorrowerId,
++                    ApproverId = loan.ApproverId != 0 ? loan.ApproverId : loan.BorrowerId,
++                    ItemId = loan.ItemId,
++                    LoanDate = loan.LoanDate,
++                    ReturnDate = loan.ReturnDate,
++                    ArchiveNote = archiveNote,
++                };
++
+                 _context.Archive_Loan.Add(archiveLoan);
+                 _context.Loan.Remove(loan);
+                 await _context.SaveChangesAsync();
++
++                await SetItemStatusAsync(itemId, AvailableStatusName);
++
++                await transaction.CommitAsync();
++
++                return archiveLoan;
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
++            }
++        }
++
++        public async Task<int> GetActiveLoanCountAsync()
++        {
++            return await _context.Loan.CountAsync();
++        }
++
++        public async Task<List<Loan>> GetActiveLoansAsync(
++            int? borrowerId,
++            int? approverId,
++            int? itemId,
++            DateTime? loanDateFrom,
++            DateTime? loanDateTo,
++            string? searchTerm)
++        {
++            IQueryable<Loan> query = _context.Loan
++                .Include(x => x.Borrower)
++                .Include(x => x.Approver)
++                .Include(x => x.Item);
++
++            if (borrowerId.HasValue)
++            {
++                query = query.Where(loan => loan.BorrowerId == borrowerId.Value);
+             }
+-            return archiveLoan;
++
++            if (approverId.HasValue)
++            {
++                query = query.Where(loan => loan.ApproverId == approverId.Value);
++            }
++
++            if (itemId.HasValue)
++            {
++                query = query.Where(loan => loan.ItemId == itemId.Value);
++            }
++
++            if (loanDateFrom.HasValue)
++            {
++                query = query.Where(loan => loan.LoanDate >= loanDateFrom.Value);
++            }
++
++            if (loanDateTo.HasValue)
++            {
++                query = query.Where(loan => loan.LoanDate <= loanDateTo.Value);
++            }
++
++            if (!string.IsNullOrWhiteSpace(searchTerm))
++            {
++                string trimmedSearch = searchTerm.Trim();
++                string likeValue = $"%{trimmedSearch}%";
++
++                query = query.Where(loan =>
++                    (loan.Item != null && loan.Item.SerialNumber != null && EF.Functions.Like(loan.Item.SerialNumber, likeValue)) ||
++                    (loan.Borrower != null && loan.Borrower.Name != null && EF.Functions.Like(loan.Borrower.Name, likeValue)) ||
++                    (loan.Approver != null && loan.Approver.Name != null && EF.Functions.Like(loan.Approver.Name, likeValue)));
++            }
++
++            return await query
++                .OrderByDescending(loan => loan.LoanDate)
++                .ThenByDescending(loan => loan.Id)
++                .ToListAsync();
++        }
++
++        private async Task SetItemStatusAsync(int itemId, string statusName)
++        {
++            var status = await GetOrCreateStatusAsync(statusName);
++
++            int? latestStatusId = await _context.StatusHistory
++                .Where(history => history.ItemId == itemId)
++                .OrderByDescending(history => history.StatusUpdateDate)
++                .ThenByDescending(history => history.Id)
++                .Select(history => (int?)history.StatusId)
++                .FirstOrDefaultAsync();
++
++            if (latestStatusId == status.Id)
++            {
++                return;
++            }
++
++            StatusHistory newHistory = new StatusHistory
++            {
++                ItemId = itemId,
++                StatusId = status.Id,
++                StatusUpdateDate = DateTime.UtcNow,
++                Note = null,
++            };
++
++            _context.StatusHistory.Add(newHistory);
++            await _context.SaveChangesAsync();
++        }
++
++        private async Task<Status> GetOrCreateStatusAsync(string statusName)
++        {
++            string normalized = NormalizeStatusName(statusName);
++
++            Status? status = await _context.Status
++                .FirstOrDefaultAsync(s => NormalizeStatusName(s.Name) == normalized);
++
++            if (status != null)
++            {
++                return status;
++            }
++
++            status = new Status
++            {
++                Name = statusName.Trim()
++            };
++
++            _context.Status.Add(status);
++            await _context.SaveChangesAsync();
++
++            return status;
++        }
++
++        private static string NormalizeStatusName(string statusName)
++        {
++            return new string(statusName
++                .Where(c => !char.IsWhiteSpace(c))
++                .Select(char.ToLowerInvariant)
++                .ToArray());
+         }
+     }
+ }
+diff --git a/Backend/SOP/SOP/Controllers/DashboardController.cs b/Backend/SOP/SOP/Controllers/DashboardController.cs
+index ed806138d39fc7bee93aeb650d46efc634cd68ce..2abf2f1b0c28e00c3e3de99bf52a85a5b9312c5e 100644
+--- a/Backend/SOP/SOP/Controllers/DashboardController.cs
++++ b/Backend/SOP/SOP/Controllers/DashboardController.cs
+@@ -1,63 +1,179 @@
+ using Microsoft.AspNetCore.Authorization;
+ using Microsoft.AspNetCore.Mvc;
+ using SOP.DTOs;
++using SOP.Entities;
+ using SOP.Repositories;
++using System;
++using System.Collections.Generic;
+ using System.Linq;
+ 
+ namespace SOP.Controllers
+ {
+     [Route("api/[controller]")]
+     [ApiController]
+     public class DashboardController : ControllerBase
+     {
++        private static readonly HashSet<string> NonFunctionalStatusNames = new(StringComparer.OrdinalIgnoreCase)
++        {
++            "Gik stykker",
++            "Skadet",
++            "Defekt",
++            "Virker ikke",
++            "Under service",
++            "Til reparation",
++            "I reparation"
++        };
++
+         private readonly IStatusHistoryRepository _statusHistoryRepository;
+         private readonly IItemRepository _itemRepository;
++        private readonly ILoanRepository _loanRepository;
+ 
+-        public DashboardController(IStatusHistoryRepository statusHistoryRepository, IItemRepository itemRepository)
++        public DashboardController(
++            IStatusHistoryRepository statusHistoryRepository,
++            IItemRepository itemRepository,
++            ILoanRepository loanRepository)
+         {
+             _statusHistoryRepository = statusHistoryRepository;
+             _itemRepository = itemRepository;
++            _loanRepository = loanRepository;
+         }
+ 
+         [Authorize("Admin", "Instruktør", "Drift")]
+         [HttpGet("status-summary")]
+         public async Task<IActionResult> GetStatusSummaryAsync()
+         {
+             try
+             {
+                 var statusHistories = await _statusHistoryRepository.GetAllAsync();
+ 
+                 var latestStatuses = statusHistories
+                     .GroupBy(history => history.ItemId)
+                     .Select(group => group
+                         .OrderByDescending(history => history.StatusUpdateDate)
+                         .ThenByDescending(history => history.Id)
+                         .First());
+ 
+                 var statusCounts = latestStatuses
+                     .GroupBy(history => history.Status?.Name ?? "Ukendt")
+                     .Select(group => new DashboardStatusCountResponse
+                     {
+                         Status = group.Key,
+                         Count = group.Count()
+                     })
+                     .OrderBy(result => result.Status)
+                     .ToList();
+ 
+                 var totalCount = await _itemRepository.GetTotalCountAsync();
++                var activeLoanCount = await _loanRepository.GetActiveLoanCountAsync();
++
++                int nonFunctionalCount = statusCounts
++                    .Where(status =>
++                        NonFunctionalStatusNames.Contains(status.Status) ||
++                        status.Status.Contains("ikke", StringComparison.OrdinalIgnoreCase) ||
++                        status.Status.Contains("defekt", StringComparison.OrdinalIgnoreCase) ||
++                        status.Status.Contains("skadet", StringComparison.OrdinalIgnoreCase) ||
++                        status.Status.Contains("service", StringComparison.OrdinalIgnoreCase) ||
++                        status.Status.Contains("reparation", StringComparison.OrdinalIgnoreCase))
++                    .Sum(status => status.Count);
+ 
+                 DashboardSummaryResponse response = new DashboardSummaryResponse
+                 {
+                     TotalItemCount = totalCount,
+-                    StatusCounts = statusCounts
++                    StatusCounts = statusCounts,
++                    BorrowedItemCount = activeLoanCount,
++                    NonFunctionalItemCount = nonFunctionalCount,
++                    ActiveLoanCount = activeLoanCount
+                 };
+ 
+                 return Ok(response);
+             }
+             catch (Exception ex)
+             {
+                 return Problem(ex.Message);
+             }
+         }
++
++        [Authorize("Admin", "Instruktør", "Drift")]
++        [HttpGet("status-items")]
++        public async Task<IActionResult> GetItemsByStatusAsync([FromQuery] string status, [FromQuery] string? search = null)
++        {
++            if (string.IsNullOrWhiteSpace(status))
++            {
++                return BadRequest("Status er påkrævet.");
++            }
++
++            try
++            {
++                string normalizedStatus = NormalizeStatusName(status);
++                var items = await _itemRepository.GetAllAsync();
++
++                List<DashboardStatusItemResponse> responses = items
++                    .Select(item => new
++                    {
++                        Item = item,
++                        LatestStatus = item.StatusHistories?
++                            .OrderByDescending(history => history.StatusUpdateDate)
++                            .ThenByDescending(history => history.Id)
++                            .FirstOrDefault()
++                    })
++                    .Where(result => result.LatestStatus != null)
++                    .Where(result => NormalizeStatusName(result.LatestStatus!.Status?.Name ?? string.Empty) == normalizedStatus)
++                    .Select(result => new DashboardStatusItemResponse
++                    {
++                        ItemId = result.Item.Id,
++                        SerialNumber = result.Item.SerialNumber,
++                        ItemGroupName = result.Item.ItemGroup?.ModelName,
++                        RoomName = BuildRoomName(result.Item),
++                        StatusUpdatedAt = result.LatestStatus!.StatusUpdateDate,
++                        StatusNote = result.LatestStatus!.Note
++                    })
++                    .ToList();
++
++                if (!string.IsNullOrWhiteSpace(search))
++                {
++                    string trimmedSearch = search.Trim();
++                    responses = responses
++                        .Where(item =>
++                            (!string.IsNullOrWhiteSpace(item.SerialNumber) && item.SerialNumber!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
++                            (!string.IsNullOrWhiteSpace(item.ItemGroupName) && item.ItemGroupName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)) ||
++                            (!string.IsNullOrWhiteSpace(item.RoomName) && item.RoomName!.Contains(trimmedSearch, StringComparison.OrdinalIgnoreCase)))
++                        .ToList();
++                }
++
++                responses = responses
++                    .OrderByDescending(item => item.StatusUpdatedAt)
++                    .ThenBy(item => item.SerialNumber)
++                    .ToList();
++
++                return Ok(responses);
++            }
++            catch (Exception ex)
++            {
++                return Problem(ex.Message);
++            }
++        }
++
++        private static string NormalizeStatusName(string? statusName)
++        {
++            return string.IsNullOrWhiteSpace(statusName)
++                ? string.Empty
++                : new string(statusName.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToLowerInvariant();
++        }
++
++        private static string? BuildRoomName(Item item)
++        {
++            if (item.Room == null)
++            {
++                return null;
++            }
++
++            string buildingName = item.Room.Building?.BuildingName ?? string.Empty;
++            if (!string.IsNullOrWhiteSpace(buildingName))
++            {
++                return $"{buildingName} {item.Room.RoomNumber}";
++            }
++
++            return item.Room.RoomNumber.ToString();
++        }
+     }
+ }
+diff --git a/Backend/SOP/SOP/Controllers/LoanController.cs b/Backend/SOP/SOP/Controllers/LoanController.cs
+index 1e74ddaa56403a413c5f6c0aa822f85fa9b43eee..fc24d37fbc5e3db3973413548a560a0cc1c507b7 100644
+--- a/Backend/SOP/SOP/Controllers/LoanController.cs
++++ b/Backend/SOP/SOP/Controllers/LoanController.cs
+@@ -1,64 +1,91 @@
++using Microsoft.AspNetCore.Authorization;
+ using Microsoft.AspNetCore.Mvc;
+ using SOP.Archive.DTOs;
+ using SOP.DTOs;
+ using SOP.Encryption;
+ using SOP.Entities;
+ using SOP.Repositories;
+ 
+ namespace SOP.Controllers
+ {
+     [Route("api/[controller]")]
+     [ApiController]
+     public class LoanController : ControllerBase
+     {
+         private readonly ILoanRepository _loanRepository;
+ 
+         public LoanController(ILoanRepository loanRepository)
+         {
+             _loanRepository = loanRepository;
+         }
+ 
+         [Authorize("Admin", "Instruktør", "Drift")]
+         [HttpGet]
+         public async Task<IActionResult> GetAllAsync()
+         {
+             try
+             {
+                 List<Loan> loan = await _loanRepository.GetAllAsync();
+ 
+                 List<LoanResponse> roleResponses = loan.Select(
+                     loan => MapLoanToLoanResponse(loan)).ToList();
+                 return Ok(roleResponses);
+             }
+             catch (Exception ex)
+             {
+ 
+                 return Problem(ex.Message);
+             }
+         }
+ 
++        [Authorize("Admin", "Instruktør", "Drift")]
++        [HttpGet("active")]
++        public async Task<IActionResult> GetActiveAsync([FromQuery] ActiveLoanQuery query)
++        {
++            try
++            {
++                List<Loan> loans = await _loanRepository.GetActiveLoansAsync(
++                    query.BorrowerId,
++                    query.ApproverId,
++                    query.ItemId,
++                    query.LoanDateFrom,
++                    query.LoanDateTo,
++                    query.Search);
++
++                List<LoanResponse> responses = loans
++                    .Select(loan => MapLoanToLoanResponse(loan))
++                    .ToList();
++
++                return Ok(responses);
++            }
++            catch (Exception ex)
++            {
++                return Problem(ex.Message);
++            }
++        }
++
+         [Authorize("Admin", "Instruktør", "Drift")]
+         [HttpPost]
+         public async Task<IActionResult> CreateAsync([FromBody] LoanRequest loanRequest)
+         {
+             try
+             {
+                 Loan newRole = MapLoanRequestToLoan(loanRequest);
+ 
+                 var loan = await _loanRepository.CreateAsync(newRole);
+ 
+                 LoanResponse loanResponse = MapLoanToLoanResponse(loan);
+ 
+                 return Ok(loanResponse);
+             }
+             catch (Exception ex)
+             {
+                 return Problem(ex.Message);
+             }
+         }
+ 
+         [Authorize("Admin", "Instruktør", "Drift")]
+         [HttpGet]
+         [Route("{Id}")]
+         public async Task<IActionResult> FindByIdAsync([FromRoute] int Id)
+         {
+diff --git a/Backend/SOP/SOP/DTOs/ActiveLoanQuery.cs b/Backend/SOP/SOP/DTOs/ActiveLoanQuery.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..bdff88f456177d922e36372b8566705b50ee94b0
+--- /dev/null
++++ b/Backend/SOP/SOP/DTOs/ActiveLoanQuery.cs
+@@ -0,0 +1,14 @@
++using System;
++
++namespace SOP.DTOs
++{
++    public class ActiveLoanQuery
++    {
++        public int? BorrowerId { get; set; }
++        public int? ApproverId { get; set; }
++        public int? ItemId { get; set; }
++        public DateTime? LoanDateFrom { get; set; }
++        public DateTime? LoanDateTo { get; set; }
++        public string? Search { get; set; }
++    }
++}
+diff --git a/Backend/SOP/SOP/DTOs/DashboardStatusItemResponse.cs b/Backend/SOP/SOP/DTOs/DashboardStatusItemResponse.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c55b2eeafd37ab555b42bc7669d09f25fc60a9af
+--- /dev/null
++++ b/Backend/SOP/SOP/DTOs/DashboardStatusItemResponse.cs
+@@ -0,0 +1,14 @@
++using System;
++
++namespace SOP.DTOs
++{
++    public class DashboardStatusItemResponse
++    {
++        public int ItemId { get; set; }
++        public string? SerialNumber { get; set; }
++        public string? ItemGroupName { get; set; }
++        public string? RoomName { get; set; }
++        public DateTime StatusUpdatedAt { get; set; }
++        public string? StatusNote { get; set; }
++    }
++}
+diff --git a/Backend/SOP/SOP/DTOs/DashboardSummaryResponse.cs b/Backend/SOP/SOP/DTOs/DashboardSummaryResponse.cs
+index 688be36f6ec4ab46cb1566cc2d9844d095986b36..27ac9a9c2f14b64beb63bc7957767b0fe34d4c3b 100644
+--- a/Backend/SOP/SOP/DTOs/DashboardSummaryResponse.cs
++++ b/Backend/SOP/SOP/DTOs/DashboardSummaryResponse.cs
+@@ -1,10 +1,13 @@
+ using System.Collections.Generic;
+ 
+ namespace SOP.DTOs
+ {
+     public class DashboardSummaryResponse
+     {
+         public int TotalItemCount { get; set; }
+         public List<DashboardStatusCountResponse> StatusCounts { get; set; } = new();
++        public int BorrowedItemCount { get; set; }
++        public int NonFunctionalItemCount { get; set; }
++        public int ActiveLoanCount { get; set; }
+     }
+ }
+diff --git a/Backend/SOP/SOP/Repositories/ItemRepository.cs b/Backend/SOP/SOP/Repositories/ItemRepository.cs
+index c562f0f94f9114c8167204841af39f3173bacc37..2564811b48757482a53ec076c06bfb4edcb8e4c8 100644
+--- a/Backend/SOP/SOP/Repositories/ItemRepository.cs
++++ b/Backend/SOP/SOP/Repositories/ItemRepository.cs
+@@ -1,98 +1,177 @@
+ ﻿using Microsoft.EntityFrameworkCore;
+ using SOP.Database;
+ using SOP.Archive.DTOs;
+ using SOP.Archive.Entities;
++using SOP.Entities;
++using System;
++using System.Linq;
+ 
+ namespace SOP.Repositories
+ {
+     public interface IItemRepository
+     {
+         Task<Item> CreateAsync(Item newItem);
+         Task<Item?> FindByIdAsync(int itemId);
+         Task<Item?> UpdateByIdAsync(int itemId, Item updateItem);
+         Task<Archive_Item?> ArchiveByIdAsync(int itemId, string archiveNote);
+         Task<List<Item>> GetAllAsync();
+         Task<int> GetTotalCountAsync();
+     }
+ 
+     public class ItemRepository : IItemRepository
+     {
+         private readonly DatabaseContext _context;
+ 
+         // Initializes the repository with the database context for accessing data
+         public ItemRepository(DatabaseContext context)
+         {
+             _context = context;
+         }
+ 
+         // Adds a new Item, saves changes, retrieves, and returns it
+         public async Task<Item> CreateAsync(Item newItem)
+         {
+-            _context.Item.Add(newItem);
+-            await _context.SaveChangesAsync();
+-            newItem = await FindByIdAsync(newItem.Id);
+-            return newItem;
++            await using var transaction = await _context.Database.BeginTransactionAsync();
++
++            try
++            {
++                _context.Item.Add(newItem);
++                await _context.SaveChangesAsync();
++
++                await SetItemStatusAsync(newItem.Id, DefaultAvailableStatusName);
++
++                await transaction.CommitAsync();
++
++                newItem = await FindByIdAsync(newItem.Id);
++                return newItem;
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
++            }
+         }
+ 
+         // Please refer to the class diagram or ER diagram for entity relationships
+         // Finds a Item by ID, including related entities and returns it
+         public async Task<Item?> FindByIdAsync(int itemId)
+         {
+             return await _context.Item
+                 .Include(i => i.ItemGroup)
+                 .ThenInclude(ig => ig.ItemType)
+                 .Include(i => i.StatusHistories)
+                 .ThenInclude(sh => sh.Status)
+                 .Include(i => i.Room)
+                 .ThenInclude(r => r.Building)
+                 .ThenInclude(b => b.Address)
+                 .Include(i => i.Loan)
+                 .FirstOrDefaultAsync(i => i.Id == itemId);
+         }
+ 
+         // Please refer to the class diagram or ER diagram for entity relationships
+         // Retrieves all Items, including related entities and returns them
+         public async Task<List<Item>> GetAllAsync()
+         {
+             return await _context.Item
+                 .Include(i => i.ItemGroup)
+                 .ThenInclude(ig => ig.ItemType)
+                 .Include(i => i.StatusHistories)
+                 .ThenInclude(sh => sh.Status)
+                 .Include(i => i.Room)
+                 .ThenInclude(r => r.Building)
+                 .ThenInclude(b => b.Address)
+                 .Include(i => i.Loan)
+                 .ToListAsync();
+         }
+ 
+         public async Task<int> GetTotalCountAsync()
+         {
+             return await _context.Item.CountAsync();
+         }
+ 
++        private const string DefaultAvailableStatusName = "Virker";
++
++        private async Task SetItemStatusAsync(int itemId, string statusName)
++        {
++            var status = await GetOrCreateStatusAsync(statusName);
++
++            int? latestStatusId = await _context.StatusHistory
++                .Where(history => history.ItemId == itemId)
++                .OrderByDescending(history => history.StatusUpdateDate)
++                .ThenByDescending(history => history.Id)
++                .Select(history => (int?)history.StatusId)
++                .FirstOrDefaultAsync();
++
++            if (latestStatusId == status.Id)
++            {
++                return;
++            }
++
++            StatusHistory newHistory = new StatusHistory
++            {
++                ItemId = itemId,
++                StatusId = status.Id,
++                StatusUpdateDate = DateTime.UtcNow,
++                Note = null,
++            };
++
++            _context.StatusHistory.Add(newHistory);
++            await _context.SaveChangesAsync();
++        }
++
++        private async Task<Status> GetOrCreateStatusAsync(string statusName)
++        {
++            string normalized = NormalizeStatusName(statusName);
++
++            Status? status = await _context.Status
++                .FirstOrDefaultAsync(s => NormalizeStatusName(s.Name) == normalized);
++
++            if (status != null)
++            {
++                return status;
++            }
++
++            status = new Status
++            {
++                Name = statusName.Trim()
++            };
++
++            _context.Status.Add(status);
++            await _context.SaveChangesAsync();
++
++            return status;
++        }
++
++        private static string NormalizeStatusName(string statusName)
++        {
++            return new string(statusName
++                .Where(c => !char.IsWhiteSpace(c))
++                .Select(char.ToLowerInvariant)
++                .ToArray());
++        }
++
+         // Updates a Item by ID and returns the updated entity
+         public async Task<Item?> UpdateByIdAsync(int itemId, Item updateItem)
+         {
+             var item = await FindByIdAsync(itemId);
+             if (item != null)
+             {
+                 item.ItemGroupId = updateItem.ItemGroupId;
+                 item.RoomId = updateItem.RoomId;
+                 item.SerialNumber = updateItem.SerialNumber;
+                 item.ItemImageUrl = updateItem.ItemImageUrl;
+                 item.ItemInfo = updateItem.ItemInfo;
+                
+                 await _context.SaveChangesAsync();
+                 item = await FindByIdAsync(itemId);
+             }
+             return item;
+         }
+ 
+         // Archive an Item by ID, including all associated StatusHistories
+         public async Task<Archive_Item?> ArchiveByIdAsync(int itemId, string archiveNote)
+         {
+             Item item = await FindByIdAsync(itemId);
+             if (item == null)
+             {
+                 return null;
+diff --git a/Backend/SOP/SOP/Repositories/LoanRepository.cs b/Backend/SOP/SOP/Repositories/LoanRepository.cs
+index 4779bb872110fb085882228a9f86838ce508ad37..4c5c837024ca9be92d7ec0b16436db5532acb1cc 100644
+--- a/Backend/SOP/SOP/Repositories/LoanRepository.cs
++++ b/Backend/SOP/SOP/Repositories/LoanRepository.cs
+@@ -1,95 +1,280 @@
+ ﻿using Microsoft.EntityFrameworkCore;
+ using SOP.Database;
+ using SOP.Entities;
++using System;
++using System.Linq;
+ 
+ namespace SOP.Repositories
+ {
+     public interface ILoanRepository
+     {
+         Task<List<Loan>> GetAllAsync();
+         Task<Loan> CreateAsync(Loan loan);
+-        Task<Loan> FindByIdAsync(int id);
+-        Task<Loan> UpdateByIdAsync(int id, Loan loan);
+-        Task<Archive_Loan> ArchiveByIdAsync(int id, string archiveNote);
++        Task<Loan?> FindByIdAsync(int id);
++        Task<Loan?> UpdateByIdAsync(int id, Loan loan);
++        Task<Archive_Loan?> ArchiveByIdAsync(int id, string archiveNote);
++        Task<int> GetActiveLoanCountAsync();
++        Task<List<Loan>> GetActiveLoansAsync(
++            int? borrowerId,
++            int? approverId,
++            int? itemId,
++            DateTime? loanDateFrom,
++            DateTime? loanDateTo,
++            string? searchTerm);
+     }
+     public class LoanRepository : ILoanRepository
+     {
+         private readonly DatabaseContext _context;
+ 
+         public LoanRepository(DatabaseContext context)
+         {
+             _context = context;
+         }
+ 
+         public async Task<List<Loan>> GetAllAsync()
+         {
+             return await _context.Loan
+                 .Include(x => x.Borrower)
+                 .Include(x => x.Approver)
+                 .Include(x => x.Item)
+                 .ToListAsync();
+         }
+ 
+         public async Task<Loan> CreateAsync(Loan newLoan)
+         {
+-            _context.Loan.Add(newLoan);
+-            await _context.SaveChangesAsync();
+-            return newLoan;
++            await using var transaction = await _context.Database.BeginTransactionAsync();
++
++            try
++            {
++                _context.Loan.Add(newLoan);
++                await _context.SaveChangesAsync();
++
++                await SetItemStatusAsync(newLoan.ItemId, BorrowedStatusName);
++
++                await transaction.CommitAsync();
++
++                return await FindByIdAsync(newLoan.Id);
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
++            }
+         }
+ 
+         public async Task<Loan?> FindByIdAsync(int loanId)
+         {
+             return await _context.Loan
+                 .Include(x => x.Borrower)
+                 .Include(x => x.Approver)
+                 .Include(x => x.Item)
+                 .FirstOrDefaultAsync(x => x.Id == loanId);
+         }
+ 
+-        public async Task<Loan> UpdateByIdAsync(int id, Loan newLoan)
++        public async Task<Loan?> UpdateByIdAsync(int id, Loan newLoan)
+         {
+-            var loan = await FindByIdAsync(id);
++            await using var transaction = await _context.Database.BeginTransactionAsync();
+ 
+-            if (loan != null)
++            try
+             {
++                var loan = await FindByIdAsync(id);
++
++                if (loan == null)
++                {
++                    return null;
++                }
++
++                int previousItemId = loan.ItemId;
++
+                 loan.ReturnDate = newLoan.ReturnDate;
+                 loan.LoanDate = newLoan.LoanDate;
+                 loan.BorrowerId = newLoan.BorrowerId;
+                 loan.ApproverId = newLoan.ApproverId;
+                 loan.ItemId = newLoan.ItemId;
+ 
+                 await _context.SaveChangesAsync();
+ 
+-                loan = await FindByIdAsync(id);
++                await SetItemStatusAsync(loan.ItemId, BorrowedStatusName);
++
++                if (previousItemId != loan.ItemId)
++                {
++                    await SetItemStatusAsync(previousItemId, AvailableStatusName);
++                }
++
++                await transaction.CommitAsync();
++
++                return await FindByIdAsync(id);
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
+             }
+-            return loan;
+         }
+ 
+-        public async Task<Archive_Loan> ArchiveByIdAsync(int loanId, string archiveNote)
++        public async Task<Archive_Loan?> ArchiveByIdAsync(int loanId, string archiveNote)
+         {
+-            var loan = await FindByIdAsync(loanId);
+-            if (loan == null)
+-            {
+-                return null;
+-            }
+-            Archive_Loan archiveLoan = new Archive_Loan
+-            {
+-                Id = loan.Id,
+-                DeleteTime = DateTime.Now,
+-                BorrowerId = loan.BorrowerId,
+-                ApproverId = loan.ApproverId != 0 ? loan.ApproverId : loan.BorrowerId,
+-                ItemId = loan.ItemId,
+-                LoanDate = loan.LoanDate,
+-                ReturnDate = loan.ReturnDate,
+-                ArchiveNote = archiveNote,
+-            };
+-            if (loan != null)
++            await using var transaction = await _context.Database.BeginTransactionAsync();
++
++            try
+             {
++                var loan = await FindByIdAsync(loanId);
++                if (loan == null)
++                {
++                    return null;
++                }
++
++                int itemId = loan.ItemId;
++
++                Archive_Loan archiveLoan = new Archive_Loan
++                {
++                    Id = loan.Id,
++                    DeleteTime = DateTime.Now,
++                    BorrowerId = loan.BorrowerId,
++                    ApproverId = loan.ApproverId != 0 ? loan.ApproverId : loan.BorrowerId,
++                    ItemId = loan.ItemId,
++                    LoanDate = loan.LoanDate,
++                    ReturnDate = loan.ReturnDate,
++                    ArchiveNote = archiveNote,
++                };
++
+                 _context.Archive_Loan.Add(archiveLoan);
+                 _context.Loan.Remove(loan);
+                 await _context.SaveChangesAsync();
++
++                await SetItemStatusAsync(itemId, AvailableStatusName);
++
++                await transaction.CommitAsync();
++
++                return archiveLoan;
++            }
++            catch
++            {
++                await transaction.RollbackAsync();
++                throw;
++            }
++        }
++
++        public async Task<int> GetActiveLoanCountAsync()
++        {
++            return await _context.Loan.CountAsync();
++        }
++
++        public async Task<List<Loan>> GetActiveLoansAsync(
++            int? borrowerId,
++            int? approverId,
++            int? itemId,
++            DateTime? loanDateFrom,
++            DateTime? loanDateTo,
++            string? searchTerm)
++        {
++            IQueryable<Loan> query = _context.Loan
++                .Include(x => x.Borrower)
++                .Include(x => x.Approver)
++                .Include(x => x.Item);
++
++            if (borrowerId.HasValue)
++            {
++                query = query.Where(loan => loan.BorrowerId == borrowerId.Value);
++            }
++
++            if (approverId.HasValue)
++            {
++                query = query.Where(loan => loan.ApproverId == approverId.Value);
+             }
+-            return archiveLoan;
++
++            if (itemId.HasValue)
++            {
++                query = query.Where(loan => loan.ItemId == itemId.Value);
++            }
++
++            if (loanDateFrom.HasValue)
++            {
++                query = query.Where(loan => loan.LoanDate >= loanDateFrom.Value);
++            }
++
++            if (loanDateTo.HasValue)
++            {
++                query = query.Where(loan => loan.LoanDate <= loanDateTo.Value);
++            }
++
++            if (!string.IsNullOrWhiteSpace(searchTerm))
++            {
++                string trimmedSearch = searchTerm.Trim();
++                string likeValue = $"%{trimmedSearch}%";
++
++                query = query.Where(loan =>
++                    (loan.Item != null && loan.Item.SerialNumber != null && EF.Functions.Like(loan.Item.SerialNumber, likeValue)) ||
++                    (loan.Borrower != null && loan.Borrower.Name != null && EF.Functions.Like(loan.Borrower.Name, likeValue)) ||
++                    (loan.Approver != null && loan.Approver.Name != null && EF.Functions.Like(loan.Approver.Name, likeValue)));
++            }
++
++            return await query
++                .OrderByDescending(loan => loan.LoanDate)
++                .ThenByDescending(loan => loan.Id)
++                .ToListAsync();
++        }
++
++        private const string BorrowedStatusName = "Udlånt";
++        private const string AvailableStatusName = "Virker";
++
++        private async Task SetItemStatusAsync(int itemId, string statusName)
++        {
++            var status = await GetOrCreateStatusAsync(statusName);
++
++            int? latestStatusId = await _context.StatusHistory
++                .Where(history => history.ItemId == itemId)
++                .OrderByDescending(history => history.StatusUpdateDate)
++                .ThenByDescending(history => history.Id)
++                .Select(history => (int?)history.StatusId)
++                .FirstOrDefaultAsync();
++
++            if (latestStatusId == status.Id)
++            {
++                return;
++            }
++
++            StatusHistory newHistory = new StatusHistory
++            {
++                ItemId = itemId,
++                StatusId = status.Id,
++                StatusUpdateDate = DateTime.UtcNow,
++                Note = null,
++            };
++
++            _context.StatusHistory.Add(newHistory);
++            await _context.SaveChangesAsync();
++        }
++
++        private async Task<Status> GetOrCreateStatusAsync(string statusName)
++        {
++            string normalized = NormalizeStatusName(statusName);
++
++            Status? status = await _context.Status
++                .FirstOrDefaultAsync(s => NormalizeStatusName(s.Name) == normalized);
++
++            if (status != null)
++            {
++                return status;
++            }
++
++            status = new Status
++            {
++                Name = statusName.Trim()
++            };
++
++            _context.Status.Add(status);
++            await _context.SaveChangesAsync();
++
++            return status;
++        }
++
++        private static string NormalizeStatusName(string statusName)
++        {
++            return new string(statusName
++                .Where(c => !char.IsWhiteSpace(c))
++                .Select(char.ToLowerInvariant)
++                .ToArray());
+         }
+     }
+ }
+diff --git a/Frontend/src/app/app-routing.module.ts b/Frontend/src/app/app-routing.module.ts
+index 35e8343ed9a6143bcc84c4fa0428ac4f49fdec1c..4338035f0eda088fddfb437eade8f3c44792e515 100644
+--- a/Frontend/src/app/app-routing.module.ts
++++ b/Frontend/src/app/app-routing.module.ts
+@@ -10,95 +10,109 @@ import { LoanComponent } from './loan/loan.component';
+ import { CreateUserComponent } from './create-user/create-user.component';
+ import { AddressComponent } from './address/address.component';
+ import { BuildingComponent } from './buildings/buildings.component';
+ import { RoomComponent } from './room/room.component';
+ import { AuthGuard } from './guards/auth.guard';
+ import { RoleGuard } from './guards/role.guard';
+ import { ItemDetailsComponent } from './itemDetails/itemDetails.component';
+ import { ItemGroupsComponent } from './itemgroups/itemgroups.component';
+ import { RolesComponent } from './roles/roles.component';
+ import { StatusComponent } from './status/status.component';
+ import { ItemtypeComponent } from './itemtype/itemtype.component';
+ import { RequestComponent } from './request/request.component';
+ import { StatusHistoryComponent } from './status-history/status-history.component';
+ import { ArchiveMenuComponent } from './archive/archive-menu/archive-menu.component';
+ import { ItemArchiveComponent } from './archive/item-archive/item-archive.component';
+ import { ItemgroupArchiveComponent } from './archive/itemgroup-archive/itemgroup-archive.component';
+ import { LoanArchiveComponent } from './archive/loan-archive/loan-archive.component';
+ import { RequestArchiveComponent } from './archive/request-archive/request-archive.component';
+ import { UserArchiveComponent } from './archive/user-archive/user-archive.component';
+ import { ItemtypeArchiveComponent } from './archive/itemtype-archive/itemtype-archive.component';
+ import { ComputerComponent } from './computer/computer.component';
+ import { ComputerpartComponent } from './computerpart/computerpart.component';
+ import { PartGroupsComponent } from './part-groups/part-groups.component';
+ import { PartTypeComponent } from './part-type/part-type.component';
+ import { DashboardComponent } from './dashboard/dashboard.component';
++import { ActiveLoansComponent } from './loan-active/active-loans.component';
++import { StatusItemsComponent } from './dashboard-status/status-items.component';
+ 
+ export const routes: Routes = [
+   //Default route
+   { path: '', redirectTo: 'login', pathMatch: 'full' },
+ 
+   //No Auth Guard needed or Role Guard needed for login
+   { path: 'login', component: LoginComponent },
+ 
+   //No Auth Guard needed
+   { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
+   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
+ 
+   //For User navbar
+   {
+     path: 'users',
+     component: UsersComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1] },
+   },
+   {
+     path: 'students',
+     component: UsersStudentComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1, 2, 4] },
+   },
+   {
+     path: 'roles',
+     component: RolesComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1] },
+   },
+ 
+   //For Inventory Navbar
+   {
+     path: 'itemgroups',
+     component: ItemGroupsComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1, 4] },
+   },
+   {
+     path: 'dashboard',
+     component: DashboardComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1, 2, 4] },
+   },
++  {
++    path: 'dashboard/active-loans',
++    component: ActiveLoansComponent,
++    canActivate: [AuthGuard, RoleGuard],
++    data: { roles: [1, 2, 4] },
++  },
++  {
++    path: 'dashboard/status/:statusName',
++    component: StatusItemsComponent,
++    canActivate: [AuthGuard, RoleGuard],
++    data: { roles: [1, 2, 4] },
++  },
+   {
+     path: 'itemtype',
+     component: ItemtypeComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1, 4] },
+   },
+   {
+     path: 'inventory',
+     component: InventoryComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1, 4] },
+   },
+   {
+     path: 'itemDetails/:id',
+     component: ItemDetailsComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1, 2, 4] },
+   },
+   {
+     path: 'status',
+     component: StatusComponent,
+     canActivate: [AuthGuard, RoleGuard],
+     data: { roles: [1] },
+   },
+   {
+diff --git a/Frontend/src/app/dashboard-status/status-items.component.css b/Frontend/src/app/dashboard-status/status-items.component.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..98e667a0fd63552f908d67d578007c4c6e6b3d27
+--- /dev/null
++++ b/Frontend/src/app/dashboard-status/status-items.component.css
+@@ -0,0 +1,17 @@
++.empty-message {
++  padding: 1rem 0;
++}
++
++.table th {
++  white-space: nowrap;
++}
++
++.table td {
++  vertical-align: middle;
++}
++
++@media (max-width: 576px) {
++  .d-flex h2 {
++    font-size: 1.5rem;
++  }
++}
+diff --git a/Frontend/src/app/dashboard-status/status-items.component.html b/Frontend/src/app/dashboard-status/status-items.component.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..3d8ba4b55cdc76a4ff544b801177b9a53fd7a7d5
+--- /dev/null
++++ b/Frontend/src/app/dashboard-status/status-items.component.html
+@@ -0,0 +1,71 @@
++<app-navbar></app-navbar>
++
++<div class="container mt-4">
++  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
++    <h2 class="mb-0">Genstande med status "{{ displayName }}"</h2>
++    <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
++      Tilbage til dashboard
++    </button>
++  </div>
++
++  <div class="card shadow-sm">
++    <div class="card-body">
++      <form class="row g-3 align-items-center mb-3" (submit)="$event.preventDefault()">
++        <div class="col-sm-6 col-lg-4">
++          <label for="status-search" class="form-label visually-hidden">Søg</label>
++          <input
++            id="status-search"
++            type="text"
++            class="form-control"
++            placeholder="Søg efter serienummer, model eller lokale"
++            name="search"
++            [(ngModel)]="searchTerm"
++            (ngModelChange)="onSearchChange($event)"
++          />
++        </div>
++        <div class="col-auto">
++          <button type="button" class="btn btn-outline-secondary" (click)="clearSearch()">
++            Nulstil
++          </button>
++        </div>
++      </form>
++
++      <div *ngIf="isLoading" class="alert alert-info" role="alert">
++        Indlæser genstande...
++      </div>
++
++      <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
++        {{ errorMessage }}
++      </div>
++
++      <ng-container *ngIf="!isLoading && !errorMessage">
++        <div *ngIf="items.length === 0" class="text-muted empty-message">
++          Ingen genstande med denne status blev fundet.
++        </div>
++
++        <div class="table-responsive" *ngIf="items.length > 0">
++          <table class="table align-middle">
++            <thead class="table-light">
++              <tr>
++                <th scope="col">Serienummer</th>
++                <th scope="col">Model</th>
++                <th scope="col">Lokation</th>
++                <th scope="col">Senest opdateret</th>
++                <th scope="col">Note</th>
++              </tr>
++            </thead>
++            <tbody>
++              <tr *ngFor="let item of items">
++                <td>{{ item.serialNumber || '—' }}</td>
++                <td>{{ item.itemGroupName || '—' }}</td>
++                <td>{{ item.roomName || '—' }}</td>
++                <td>{{ formatDate(item.statusUpdatedAt) }}</td>
++                <td>{{ item.statusNote || '—' }}</td>
++              </tr>
++            </tbody>
++          </table>
++        </div>
++      </ng-container>
++    </div>
++  </div>
++</div>
+diff --git a/Frontend/src/app/dashboard-status/status-items.component.ts b/Frontend/src/app/dashboard-status/status-items.component.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ebca9b4714a66f3bb7cc8e3f0ffe5e9e7ee83c3b
+--- /dev/null
++++ b/Frontend/src/app/dashboard-status/status-items.component.ts
+@@ -0,0 +1,142 @@
++import { Component, OnDestroy, OnInit } from '@angular/core';
++import { CommonModule } from '@angular/common';
++import { FormsModule } from '@angular/forms';
++import { HttpErrorResponse } from '@angular/common/http';
++import { ActivatedRoute, Router } from '@angular/router';
++import { NavbarComponent } from '../navbar/navbar.component';
++import { DashboardService } from '../services/dashboard.service';
++import { DashboardStatusItem } from '../models/dashboard-status-item';
++import { Subject, Subscription } from 'rxjs';
++import { debounceTime } from 'rxjs/operators';
++
++@Component({
++  selector: 'app-status-items',
++  standalone: true,
++  imports: [CommonModule, FormsModule, NavbarComponent],
++  templateUrl: './status-items.component.html',
++  styleUrl: './status-items.component.css',
++})
++export class StatusItemsComponent implements OnInit, OnDestroy {
++  statusName = '';
++  displayName = '';
++  items: DashboardStatusItem[] = [];
++  isLoading = false;
++  errorMessage: string | null = null;
++  searchTerm = '';
++
++  private readonly searchChanges$ = new Subject<string>();
++  private subscriptions: Subscription = new Subscription();
++
++  constructor(
++    private readonly dashboardService: DashboardService,
++    private readonly route: ActivatedRoute,
++    private readonly router: Router,
++  ) { }
++
++  ngOnInit(): void {
++    this.subscriptions.add(
++      this.searchChanges$
++        .pipe(debounceTime(300))
++        .subscribe(() => this.loadItems()),
++    );
++
++    this.subscriptions.add(
++      this.route.paramMap.subscribe((params) => {
++        const statusParam = params.get('statusName');
++        if (!statusParam) {
++          return;
++        }
++
++        this.statusName = statusParam;
++        this.displayName = this.getDisplayName(this.statusName);
++        this.searchTerm = '';
++        this.loadItems();
++      }),
++    );
++  }
++
++  ngOnDestroy(): void {
++    this.subscriptions.unsubscribe();
++  }
++
++  onSearchChange(value: string): void {
++    this.searchTerm = value;
++    this.searchChanges$.next(value);
++  }
++
++  clearSearch(): void {
++    if (!this.searchTerm) {
++      return;
++    }
++
++    this.searchTerm = '';
++    this.loadItems();
++  }
++
++  goBack(): void {
++    this.router.navigate(['/dashboard']);
++  }
++
++  formatDate(value: string | null | undefined): string {
++    if (!value) {
++      return '—';
++    }
++
++    const date = new Date(value);
++    if (isNaN(date.getTime())) {
++      return '—';
++    }
++
++    return date.toLocaleDateString('da-DK', {
++      year: 'numeric',
++      month: 'short',
++      day: 'numeric',
++    });
++  }
++
++  private loadItems(): void {
++    if (!this.statusName) {
++      return;
++    }
++
++    this.isLoading = true;
++    this.errorMessage = null;
++
++    this.dashboardService.getItemsByStatus(this.statusName, this.searchTerm).subscribe({
++      next: (items) => {
++        this.items = items;
++        this.isLoading = false;
++      },
++      error: (error: HttpErrorResponse) => {
++        this.errorMessage = this.resolveErrorMessage(error);
++        this.isLoading = false;
++      },
++    });
++  }
++
++  private resolveErrorMessage(error: HttpErrorResponse): string {
++    if (error.status === 0) {
++      return 'Kan ikke forbinde til serveren. Kontroller din netværksforbindelse.';
++    }
++
++    if (error.error && typeof error.error === 'string') {
++      return error.error;
++    }
++
++    return 'Der opstod en fejl under hentning af genstande.';
++  }
++
++  private getDisplayName(status: string): string {
++    const normalized = status.trim().toLowerCase();
++
++    if (normalized.replace(/\s+/g, '') === 'gikstykker') {
++      return 'Gik i stykker';
++    }
++
++    if (normalized === 'virker') {
++      return 'Virker';
++    }
++
++    return status;
++  }
++}
+diff --git a/Frontend/src/app/dashboard/dashboard.component.css b/Frontend/src/app/dashboard/dashboard.component.css
+index de436ed48c8c5da6ed881bf96d11db0f431a638c..b3c98c8ff0cdeef8e74ba670d8ca8134981bb98c 100644
+--- a/Frontend/src/app/dashboard/dashboard.component.css
++++ b/Frontend/src/app/dashboard/dashboard.component.css
+@@ -1,31 +1,82 @@
+ .status-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+   gap: 1rem;
+ }
+ 
+ .status-card {
+   border: 1px solid rgba(0, 0, 0, 0.1);
+   border-radius: 0.75rem;
+   padding: 1rem;
+   background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 202, 240, 0.1));
+   text-align: center;
+   transition: transform 0.2s ease, box-shadow 0.2s ease;
++  color: inherit;
+ }
+ 
+ .status-card:hover {
+   transform: translateY(-2px);
+-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
++  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
++}
++
++.status-card.quick-stat-card {
++  display: flex;
++  flex-direction: column;
++  justify-content: center;
++  min-height: 140px;
++}
++
++button.status-card {
++  border: none;
++  cursor: pointer;
++  width: 100%;
++  background: linear-gradient(135deg, rgba(25, 135, 84, 0.12), rgba(13, 202, 240, 0.1));
++}
++
++button.status-card:focus-visible {
++  outline: 3px solid rgba(13, 110, 253, 0.4);
++  outline-offset: 3px;
++}
++
++.status-card-link {
++  display: flex;
++  flex-direction: column;
++  justify-content: center;
+ }
+ 
+ .status-name {
+   font-weight: 600;
+   margin-bottom: 0.25rem;
+   color: #0d6efd;
+ }
+ 
+ .status-count {
+   font-size: 1.75rem;
+   font-weight: 700;
+   margin: 0;
+ }
++
++.status-empty {
++  grid-column: 1 / -1;
++  padding: 1rem;
++  border-radius: 0.75rem;
++  background-color: rgba(0, 0, 0, 0.03);
++}
++
++.quick-stats-grid {
++  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
++}
++
++.emphasis-card {
++  background: linear-gradient(135deg, rgba(13, 110, 253, 0.15), rgba(13, 202, 240, 0.12));
++}
++
++.warning-card {
++  background: linear-gradient(135deg, rgba(255, 193, 7, 0.18), rgba(255, 87, 34, 0.12));
++}
++
++@media (max-width: 576px) {
++  .status-card.quick-stat-card {
++    min-height: 110px;
++  }
++}
+diff --git a/Frontend/src/app/dashboard/dashboard.component.html b/Frontend/src/app/dashboard/dashboard.component.html
+index bbfe458ea3e4416589bfd2774546188a3a80c5f1..a9530074bd3339ea83911d7e362c1f3d3acd1f06 100644
+--- a/Frontend/src/app/dashboard/dashboard.component.html
++++ b/Frontend/src/app/dashboard/dashboard.component.html
+@@ -1,41 +1,67 @@
+ <app-navbar></app-navbar>
+ 
+ <div class="container mt-4">
+   <h2 class="mb-4">Dashboard</h2>
+ 
+   <div *ngIf="isLoading" class="alert alert-info" role="alert">
+     Indlæser dashboarddata...
+   </div>
+ 
+   <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+     {{ errorMessage }}
+   </div>
+ 
+   <div *ngIf="!isLoading && !errorMessage && summary" class="row g-3">
+-    <div class="col-12 col-lg-4">
++    <div class="col-12">
+       <div class="card shadow-sm h-100">
+-        <div class="card-body d-flex flex-column justify-content-center text-center">
+-          <h5 class="card-title">Samlet antal genstande</h5>
+-          <p class="display-5 fw-bold mb-0">{{ summary.totalItemCount }}</p>
++        <div class="card-body">
++          <h5 class="card-title">Hurtigt overblik</h5>
++          <div class="status-grid quick-stats-grid">
++            <div class="status-card emphasis-card quick-stat-card">
++              <p class="status-name">Samlet antal genstande</p>
++              <p class="status-count">{{ summary.totalItemCount }}</p>
++            </div>
++            <button type="button" class="status-card status-card-link quick-stat-card" (click)="goToActiveLoans()">
++              <span class="visually-hidden">Gå til aktive udlån</span>
++              <p class="status-name">Aktive udlån</p>
++              <p class="status-count">{{ summary.activeLoanCount }}</p>
++            </button>
++            <div class="status-card warning-card quick-stat-card">
++              <p class="status-name">Ikke-fungerende genstande</p>
++              <p class="status-count">{{ summary.nonFunctionalItemCount }}</p>
++            </div>
++          </div>
+         </div>
+       </div>
+     </div>
+ 
+-    <div class="col-12 col-lg-8">
++    <div class="col-12">
+       <div class="card shadow-sm h-100">
+         <div class="card-body">
+           <h5 class="card-title">Genstande efter status</h5>
+           <div class="status-grid">
+-            <div class="status-card" *ngFor="let status of summary.statusCounts">
+-              <p class="status-name">{{ status.status }}</p>
+-              <p class="status-count">{{ status.count }}</p>
+-            </div>
+-            <div *ngIf="summary.statusCounts.length === 0" class="text-muted">
++            <ng-container *ngFor="let status of getStatusCounts(); trackBy: trackStatusBy">
++              <button
++                *ngIf="isStatusClickable(status.status)"
++                type="button"
++                class="status-card status-card-link"
++                (click)="goToStatusItems(status.status)"
++              >
++                <span class="visually-hidden">Se genstande med status {{ status.status }}</span>
++                <p class="status-name">{{ getStatusDisplayName(status.status) }}</p>
++                <p class="status-count">{{ status.count }}</p>
++              </button>
++              <div *ngIf="!isStatusClickable(status.status)" class="status-card">
++                <p class="status-name">{{ getStatusDisplayName(status.status) }}</p>
++                <p class="status-count">{{ status.count }}</p>
++              </div>
++            </ng-container>
++            <div *ngIf="getStatusCounts().length === 0" class="text-muted status-empty">
+               Ingen statusdata tilgængelig.
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+ </div>
+diff --git a/Frontend/src/app/dashboard/dashboard.component.ts b/Frontend/src/app/dashboard/dashboard.component.ts
+index 01165c82ed6a5a72d9317eade8642c2c2d257643..a111bc63e718d7da74a5f79febca622fa6c3b0bc 100644
+--- a/Frontend/src/app/dashboard/dashboard.component.ts
++++ b/Frontend/src/app/dashboard/dashboard.component.ts
+@@ -1,53 +1,94 @@
+ import { Component, OnInit } from '@angular/core';
+ import { CommonModule } from '@angular/common';
+ import { HttpErrorResponse } from '@angular/common/http';
+ import { NavbarComponent } from '../navbar/navbar.component';
+ import { DashboardService } from '../services/dashboard.service';
+-import { DashboardSummary } from '../models/dashboard-summary';
++import { DashboardSummary, DashboardStatusCount } from '../models/dashboard-summary';
++import { Router } from '@angular/router';
+ 
+ @Component({
+   selector: 'app-dashboard',
+   standalone: true,
+   imports: [CommonModule, NavbarComponent],
+   templateUrl: './dashboard.component.html',
+   styleUrls: ['./dashboard.component.css']
+ })
+ export class DashboardComponent implements OnInit {
+   summary: DashboardSummary | null = null;
+   isLoading = false;
+   errorMessage: string | null = null;
+ 
+-  constructor(private dashboardService: DashboardService) { }
++  private readonly borrowedStatusNames = new Set<string>(['Udlånt', 'Udlejet', 'Loaned']);
++  private readonly clickableStatuses = new Set<string>(['Virker', 'Gik stykker', 'Gik i stykker']);
++
++  constructor(
++    private dashboardService: DashboardService,
++    private router: Router,
++  ) { }
+ 
+   ngOnInit(): void {
+     this.loadSummary();
+   }
+ 
+   private loadSummary(): void {
+     this.isLoading = true;
+     this.errorMessage = null;
+ 
+     this.dashboardService.getStatusSummary().subscribe({
+       next: (summary) => {
+         this.summary = summary;
+         this.isLoading = false;
+       },
+       error: (error: HttpErrorResponse) => {
+         this.errorMessage = this.resolveErrorMessage(error);
+         this.isLoading = false;
+       }
+     });
+   }
+ 
+   private resolveErrorMessage(error: HttpErrorResponse): string {
+     if (error.status === 0) {
+       return 'Kan ikke forbinde til serveren. Kontroller din netværksforbindelse.';
+     }
+ 
+     if (error.error && typeof error.error === 'string') {
+       return error.error;
+     }
+ 
+     return 'Der opstod en fejl under hentning af dashboarddata.';
+   }
++
++  goToActiveLoans(): void {
++    this.router.navigate(['/dashboard/active-loans']);
++  }
++
++  getStatusCounts(): DashboardStatusCount[] {
++    if (!this.summary) {
++      return [];
++    }
++
++    return this.summary.statusCounts.filter((status) => !this.borrowedStatusNames.has(status.status));
++  }
++
++  isStatusClickable(statusName: string): boolean {
++    return this.clickableStatuses.has(statusName);
++  }
++
++  goToStatusItems(statusName: string): void {
++    this.router.navigate(['/dashboard/status', statusName]);
++  }
++
++  trackStatusBy(_index: number, status: DashboardStatusCount): string {
++    return status.status;
++  }
++
++  getStatusDisplayName(statusName: string): string {
++    const normalized = statusName.trim().toLowerCase();
++
++    if (normalized.replace(/\s+/g, '') === 'gikstykker') {
++      return 'Gik i stykker';
++    }
++
++    return statusName;
++  }
+ }
+diff --git a/Frontend/src/app/loan-active/active-loans.component.css b/Frontend/src/app/loan-active/active-loans.component.css
+new file mode 100644
+index 0000000000000000000000000000000000000000..b99df685ceaaac3acba5239a3a349c28b3ab4165
+--- /dev/null
++++ b/Frontend/src/app/loan-active/active-loans.component.css
+@@ -0,0 +1,29 @@
++.card {
++  border-radius: 0.75rem;
++  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
++}
++
++.card-body {
++  padding: 1.5rem;
++}
++
++.table-responsive {
++  max-height: 65vh;
++}
++
++.table thead th {
++  position: sticky;
++  top: 0;
++  background-color: #f8f9fa;
++  z-index: 1;
++}
++
++.alert {
++  border-radius: 0.75rem;
++}
++
++@media (max-width: 576px) {
++  .card-body {
++    padding: 1rem;
++  }
++}
+diff --git a/Frontend/src/app/loan-active/active-loans.component.html b/Frontend/src/app/loan-active/active-loans.component.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..f279ac22dc600e8a3889b638174a0beb3efbe9f0
+--- /dev/null
++++ b/Frontend/src/app/loan-active/active-loans.component.html
+@@ -0,0 +1,89 @@
++<app-navbar></app-navbar>
++
++<div class="container mt-4">
++  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
++    <h2 class="mb-0">Aktive udlån</h2>
++    <button class="btn btn-outline-secondary" type="button" (click)="clearFilters()">
++      Nulstil filtre
++    </button>
++  </div>
++
++  <div class="card mb-4">
++    <div class="card-body">
++      <form class="row g-3">
++        <div class="col-12 col-lg-6 col-xxl-4">
++          <label for="search" class="form-label">Søg</label>
++          <input
++            id="search"
++            type="text"
++            class="form-control"
++            name="search"
++            [value]="filters.search || ''"
++            (input)="onSearchChange($any($event.target).value)"
++            placeholder="Søg på serienummer, låner eller godkender"
++          />
++        </div>
++        <div class="col-12 col-sm-6 col-lg-3 col-xxl-2">
++          <label for="loanDateFrom" class="form-label">Lånedato fra</label>
++          <input
++            id="loanDateFrom"
++            type="date"
++            class="form-control"
++            name="loanDateFrom"
++            [(ngModel)]="filters.loanDateFrom"
++            (change)="onDateFilterChange()"
++          />
++        </div>
++        <div class="col-12 col-sm-6 col-lg-3 col-xxl-2">
++          <label for="loanDateTo" class="form-label">Lånedato til</label>
++          <input
++            id="loanDateTo"
++            type="date"
++            class="form-control"
++            name="loanDateTo"
++            [(ngModel)]="filters.loanDateTo"
++            (change)="onDateFilterChange()"
++          />
++        </div>
++      </form>
++    </div>
++  </div>
++
++  <div *ngIf="isLoading" class="alert alert-info" role="alert">
++    Indlæser aktive udlån...
++  </div>
++
++  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
++    {{ errorMessage }}
++  </div>
++
++  <div class="card" *ngIf="!isLoading && !errorMessage">
++    <div class="table-responsive">
++      <table class="table table-striped mb-0">
++        <thead class="table-light">
++          <tr>
++            <th scope="col">Serienummer</th>
++            <th scope="col">Låner</th>
++            <th scope="col">Godkender</th>
++            <th scope="col">Lånedato</th>
++            <th scope="col">Forventet afleveringsdato</th>
++          </tr>
++        </thead>
++        <tbody>
++          <tr *ngFor="let loan of loans">
++            <td>{{ loan.loanItem?.serialNumber || '—' }}</td>
++            <td>{{ getBorrowerName(loan) }}</td>
++            <td>{{ getApproverName(loan) }}</td>
++            <td>{{ formatDate(loan.loanDate) }}</td>
++            <td>{{ formatDate(loan.returnDate) }}</td>
++          </tr>
++          <tr *ngIf="loans.length === 0">
++            <td colspan="5" class="text-center text-muted py-4">
++              Ingen aktive udlån matcher filtrene.
++            </td>
++          </tr>
++        </tbody>
++      </table>
++    </div>
++  </div>
++</div>
+diff --git a/Frontend/src/app/loan-active/active-loans.component.ts b/Frontend/src/app/loan-active/active-loans.component.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..88a9f3a8c4b81913023edbaa06e74c705bc7992e
+--- /dev/null
++++ b/Frontend/src/app/loan-active/active-loans.component.ts
+@@ -0,0 +1,114 @@
++import { Component, OnDestroy, OnInit } from '@angular/core';
++import { CommonModule } from '@angular/common';
++import { FormsModule } from '@angular/forms';
++import { HttpErrorResponse } from '@angular/common/http';
++import { NavbarComponent } from '../navbar/navbar.component';
++import { LoanService } from '../services/loan.service';
++import { Loan } from '../models/loan';
++import { ActiveLoanFilters } from '../models/active-loan-filters';
++import { Subscription, Subject } from 'rxjs';
++import { debounceTime } from 'rxjs/operators';
++
++@Component({
++  selector: 'app-active-loans',
++  standalone: true,
++  imports: [CommonModule, FormsModule, NavbarComponent],
++  templateUrl: './active-loans.component.html',
++  styleUrl: './active-loans.component.css',
++})
++export class ActiveLoansComponent implements OnInit, OnDestroy {
++  loans: Loan[] = [];
++  isLoading = false;
++  errorMessage: string | null = null;
++  filters: ActiveLoanFilters = {
++    search: '',
++    loanDateFrom: null,
++    loanDateTo: null,
++  };
++
++  private readonly searchChanges$ = new Subject<string>();
++  private subscriptions: Subscription = new Subscription();
++
++  constructor(private loanService: LoanService) { }
++
++  ngOnInit(): void {
++    this.subscriptions.add(
++      this.searchChanges$
++        .pipe(debounceTime(300))
++        .subscribe(() => this.loadLoans()),
++    );
++
++    this.loadLoans();
++  }
++
++  ngOnDestroy(): void {
++    this.subscriptions.unsubscribe();
++  }
++
++  onSearchChange(value: string): void {
++    this.filters.search = value;
++    this.searchChanges$.next(value);
++  }
++
++  onDateFilterChange(): void {
++    this.loadLoans();
++  }
++
++  clearFilters(): void {
++    this.filters = {
++      search: '',
++      loanDateFrom: null,
++      loanDateTo: null,
++    };
++    this.loadLoans();
++  }
++
++  loadLoans(): void {
++    this.isLoading = true;
++    this.errorMessage = null;
++
++    this.loanService.getActiveLoans(this.filters).subscribe({
++      next: (loans) => {
++        this.loans = loans;
++        this.isLoading = false;
++      },
++      error: (error: HttpErrorResponse) => {
++        this.errorMessage = this.resolveErrorMessage(error);
++        this.isLoading = false;
++      },
++    });
++  }
++
++  getBorrowerName(loan: Loan): string {
++    return loan.loanUser?.name ?? loan.borrower?.name ?? '—';
++  }
++
++  getApproverName(loan: Loan): string {
++    return loan.loanApprover?.name ?? loan.approver?.name ?? '—';
++  }
++
++  formatDate(value: Date | string | null | undefined): string {
++    if (!value) {
++      return '—';
++    }
++
++    const date = value instanceof Date ? value : new Date(value);
++    if (isNaN(date.getTime())) {
++      return '—';
++    }
++
++    return date.toLocaleDateString('da-DK');
++  }
++
++  private resolveErrorMessage(error: HttpErrorResponse): string {
++    if (error.status === 0) {
++      return 'Kan ikke forbinde til serveren. Kontroller din netværksforbindelse.';
++    }
++
++    if (error.error && typeof error.error === 'string') {
++      return error.error;
++    }
++
++    return 'Der opstod en fejl under hentning af aktive udlån.';
++  }
++}
+diff --git a/Frontend/src/app/models/active-loan-filters.ts b/Frontend/src/app/models/active-loan-filters.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7514b30c9c37d082fa3859c56360f402989b416
+--- /dev/null
++++ b/Frontend/src/app/models/active-loan-filters.ts
+@@ -0,0 +1,8 @@
++export interface ActiveLoanFilters {
++  borrowerId?: number | null;
++  approverId?: number | null;
++  itemId?: number | null;
++  search?: string | null;
++  loanDateFrom?: string | null;
++  loanDateTo?: string | null;
++}
+diff --git a/Frontend/src/app/models/dashboard-status-item.ts b/Frontend/src/app/models/dashboard-status-item.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..72d65ed6f292c2bb9f0643d7d2759241ef078c07
+--- /dev/null
++++ b/Frontend/src/app/models/dashboard-status-item.ts
+@@ -0,0 +1,8 @@
++export interface DashboardStatusItem {
++  itemId: number;
++  serialNumber: string | null;
++  itemGroupName: string | null;
++  roomName: string | null;
++  statusUpdatedAt: string;
++  statusNote: string | null;
++}
+diff --git a/Frontend/src/app/models/dashboard-summary.ts b/Frontend/src/app/models/dashboard-summary.ts
+index 8b5f9a76d3dc27ca0fb9debe6c1f3cf0101b8264..59e2b9d11974761f28c33bdbe79a503aac8dcdea 100644
+--- a/Frontend/src/app/models/dashboard-summary.ts
++++ b/Frontend/src/app/models/dashboard-summary.ts
+@@ -1,9 +1,12 @@
+ export interface DashboardStatusCount {
+   status: string;
+   count: number;
+ }
+ 
+ export interface DashboardSummary {
+   totalItemCount: number;
+   statusCounts: DashboardStatusCount[];
++  borrowedItemCount: number;
++  nonFunctionalItemCount: number;
++  activeLoanCount: number;
+ }
+diff --git a/Frontend/src/app/services/dashboard.service.ts b/Frontend/src/app/services/dashboard.service.ts
+index 67f5864d63c205091436839530e06542f5e233e6..6120017aa1787678eccb13abac51e9d42906f2de 100644
+--- a/Frontend/src/app/services/dashboard.service.ts
++++ b/Frontend/src/app/services/dashboard.service.ts
+@@ -1,18 +1,29 @@
+ import { Injectable } from '@angular/core';
+-import { HttpClient } from '@angular/common/http';
++import { HttpClient, HttpParams } from '@angular/common/http';
+ import { Observable } from 'rxjs';
+ import { environment } from '../environments/environment';
+ import { DashboardSummary } from '../models/dashboard-summary';
++import { DashboardStatusItem } from '../models/dashboard-status-item';
+ 
+ @Injectable({
+   providedIn: 'root',
+ })
+ export class DashboardService {
+-  private readonly apiUrl = environment.apiUrl + 'dashboard/status-summary';
++  private readonly baseUrl = environment.apiUrl + 'dashboard';
+ 
+   constructor(private http: HttpClient) { }
+ 
+   getStatusSummary(): Observable<DashboardSummary> {
+-    return this.http.get<DashboardSummary>(this.apiUrl);
++    return this.http.get<DashboardSummary>(`${this.baseUrl}/status-summary`);
++  }
++
++  getItemsByStatus(statusName: string, searchTerm?: string): Observable<DashboardStatusItem[]> {
++    let params = new HttpParams().set('status', statusName);
++
++    if (searchTerm && searchTerm.trim().length > 0) {
++      params = params.set('search', searchTerm.trim());
++    }
++
++    return this.http.get<DashboardStatusItem[]>(`${this.baseUrl}/status-items`, { params });
+   }
+ }
+diff --git a/Frontend/src/app/services/loan.service.ts b/Frontend/src/app/services/loan.service.ts
+index 82ce979fe33aa3a9f42868bc146239771ed4cf05..79d474ac044c3abee74c2c3e30a3a64793c67a62 100644
+--- a/Frontend/src/app/services/loan.service.ts
++++ b/Frontend/src/app/services/loan.service.ts
+@@ -1,47 +1,78 @@
+ import { Injectable } from '@angular/core';
+ import { environment } from '../environments/environment';
+-import { HttpClient, HttpHeaders } from '@angular/common/http';
++import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+ import { Observable } from 'rxjs';
+ import { Loan } from '../models/loan';
+ import { AuthService } from './auth.service';
++import { ActiveLoanFilters } from '../models/active-loan-filters';
+ 
+ @Injectable({
+   providedIn: 'root',
+ })
+ export class LoanService {
+   private readonly apiUrl = environment.apiUrl + 'Loan';
+ 
+   //* getting the current user from the  AuthService\\
+   currentUser: any;
+ 
+   constructor(private http: HttpClient, private authService: AuthService) {
+     this.currentUser = this.authService.currentUserValue;
+   }
+ 
+   //* Method for getting all loans. \\
+   getAll(): Observable<Loan[]> {
+     return this.http.get<Loan[]>(this.apiUrl);
+   }
+ 
++  getActiveLoans(filters: ActiveLoanFilters): Observable<Loan[]> {
++    let params = new HttpParams();
++
++    if (filters.borrowerId) {
++      params = params.set('borrowerId', filters.borrowerId.toString());
++    }
++
++    if (filters.approverId) {
++      params = params.set('approverId', filters.approverId.toString());
++    }
++
++    if (filters.itemId) {
++      params = params.set('itemId', filters.itemId.toString());
++    }
++
++    if (filters.loanDateFrom) {
++      params = params.set('loanDateFrom', filters.loanDateFrom);
++    }
++
++    if (filters.loanDateTo) {
++      params = params.set('loanDateTo', filters.loanDateTo);
++    }
++
++    if (filters.search && filters.search.trim().length > 0) {
++      params = params.set('search', filters.search.trim());
++    }
++
++    return this.http.get<Loan[]>(`${this.apiUrl}/active`, { params });
++  }
++
+   //* Method for getting a loan by ID. \\
+   findById(loanId: number): Observable<Loan> {
+     return this.http.get<Loan>(this.apiUrl + '/' + loanId);
+   }
+ 
+   //* Method for creating a loan. \\
+   create(loan: Loan): Observable<Loan> {
+     return this.http.post<Loan>(this.apiUrl, loan);
+   }
+ 
+   //* Method for deleting a loan by ID. \\
+   delete(loanId: number, note: string): Observable<Loan> {
+     return this.http.delete<Loan>(this.apiUrl + '/' + loanId, {
+       body: { archiveNote: note }
+     });
+   }
+ 
+   //* Method for updating a loan. \\
+   update(loan: Loan): Observable<Loan> {
+     return this.http.put<Loan>(this.apiUrl + '/' + loan.id, loan);
+   }
+ }

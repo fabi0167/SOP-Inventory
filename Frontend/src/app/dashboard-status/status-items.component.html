@@ -1,0 +1,71 @@
+<app-navbar></app-navbar>
+
+<div class="container mt-4">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
+    <h2 class="mb-0">Genstande med status "{{ displayName }}"</h2>
+    <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
+      Tilbage til dashboard
+    </button>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form class="row g-3 align-items-center mb-3" (submit)="$event.preventDefault()">
+        <div class="col-sm-6 col-lg-4">
+          <label for="status-search" class="form-label visually-hidden">Søg</label>
+          <input
+            id="status-search"
+            type="text"
+            class="form-control"
+            placeholder="Søg efter serienummer, model eller lokale"
+            name="search"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+        <div class="col-auto">
+          <button type="button" class="btn btn-outline-secondary" (click)="clearSearch()">
+            Nulstil
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="isLoading" class="alert alert-info" role="alert">
+        Indlæser genstande...
+      </div>
+
+      <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+        {{ errorMessage }}
+      </div>
+
+      <ng-container *ngIf="!isLoading && !errorMessage">
+        <div *ngIf="items.length === 0" class="text-muted empty-message">
+          Ingen genstande med denne status blev fundet.
+        </div>
+
+        <div class="table-responsive" *ngIf="items.length > 0">
+          <table class="table align-middle">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Serienummer</th>
+                <th scope="col">Model</th>
+                <th scope="col">Lokation</th>
+                <th scope="col">Senest opdateret</th>
+                <th scope="col">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items">
+                <td>{{ item.serialNumber || '—' }}</td>
+                <td>{{ item.itemGroupName || '—' }}</td>
+                <td>{{ item.roomName || '—' }}</td>
+                <td>{{ formatDate(item.statusUpdatedAt) }}</td>
+                <td>{{ item.statusNote || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
