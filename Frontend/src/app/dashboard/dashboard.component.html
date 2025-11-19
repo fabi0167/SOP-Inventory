@@ -17,10 +17,11 @@
         <div class="card-body">
           <h5 class="card-title">Hurtigt overblik</h5>
           <div class="status-grid quick-stats-grid">
-            <div class="status-card emphasis-card quick-stat-card">
+            <button type="button" class="status-card status-card-link emphasis-card quick-stat-card" (click)="goToAllItems()">
+              <span class="visually-hidden">Gå til alle genstande</span>
               <p class="status-name">Samlet antal genstande</p>
               <p class="status-count">{{ summary.totalItemCount }}</p>
-            </div>
+            </button>
             <button type="button" class="status-card status-card-link quick-stat-card" (click)="goToActiveLoans()">
               <span class="visually-hidden">Gå til aktive udlån</span>
               <p class="status-name">Aktive udlån</p>
@@ -61,6 +62,38 @@
               Ingen statusdata tilgængelig.
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Genstande efter status (diagram)</h5>
+          <ng-container *ngIf="chartData.length > 0; else emptyChart">
+            <div class="status-chart" role="img" aria-label="Søjlediagram over genstandes tilstande">
+              <ngx-charts-bar-vertical
+                [results]="chartData"
+                [scheme]="chartColorScheme"
+                [customColors]="chartCustomColors"
+                [gradient]="true"
+                [animations]="false"
+                [xAxis]="true"
+                [yAxis]="true"
+                [yScaleMin]="0"
+                [roundEdges]="true"
+                [tooltipDisabled]="false"
+                [showDataLabel]="true"
+                [barPadding]="32"
+                aria-label="Vertikalt søjlediagram over genstandes status"
+              ></ngx-charts-bar-vertical>
+            </div>
+          </ng-container>
+          <ng-template #emptyChart>
+            <div class="text-muted status-empty">
+              Ingen data til diagrammet.
+            </div>
+          </ng-template>
         </div>
       </div>
     </div>

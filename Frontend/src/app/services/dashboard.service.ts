@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
 import { DashboardSummary } from '../models/dashboard-summary';
 import { DashboardStatusItem } from '../models/dashboard-status-item';
+import { DashboardItemOverview } from '../models/dashboard-item-overview';
 
 @Injectable({
   providedIn: 'root',
@@ -25,5 +26,32 @@ export class DashboardService {
     }
 
     return this.http.get<DashboardStatusItem[]>(`${this.baseUrl}/status-items`, { params });
+  }
+
+  getItemsOverview(options: {
+    statusCategory?: 'functional' | 'nonfunctional' | 'all';
+    itemGroupId?: number | null;
+    itemTypeId?: number | null;
+    search?: string | null;
+  }): Observable<DashboardItemOverview[]> {
+    let params = new HttpParams();
+
+    if (options.statusCategory && options.statusCategory !== 'all') {
+      params = params.set('statusCategory', options.statusCategory);
+    }
+
+    if (options.itemGroupId) {
+      params = params.set('itemGroupId', options.itemGroupId);
+    }
+
+    if (options.itemTypeId) {
+      params = params.set('itemTypeId', options.itemTypeId);
+    }
+
+    if (options.search && options.search.trim().length > 0) {
+      params = params.set('search', options.search.trim());
+    }
+
+    return this.http.get<DashboardItemOverview[]>(`${this.baseUrl}/items-overview`, { params });
   }
 }

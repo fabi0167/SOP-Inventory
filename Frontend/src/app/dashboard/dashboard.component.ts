@@ -5,11 +5,12 @@ import { NavbarComponent } from '../navbar/navbar.component';
 import { DashboardService } from '../services/dashboard.service';
 import { DashboardSummary, DashboardStatusCount } from '../models/dashboard-summary';
 import { Router } from '@angular/router';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, NavbarComponent],
+  imports: [CommonModule, NavbarComponent, NgxChartsModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -17,6 +18,16 @@ export class DashboardComponent implements OnInit {
   summary: DashboardSummary | null = null;
   isLoading = false;
   errorMessage: string | null = null;
+  chartData: { name: string; value: number }[] = [];
+  chartCustomColors = [
+    { name: 'Samlet antal', value: '#0d6efd' },
+    { name: 'Tilgængelige', value: '#198754' },
+    { name: 'Udlånte', value: '#0dcaf0' },
+    { name: 'Ikke-fungerende', value: '#ffc107' },
+  ];
+  chartColorScheme = {
+    domain: ['#0d6efd', '#198754', '#0dcaf0', '#ffc107']
+  };
 
   private readonly borrowedStatusTokens = ['udlaant', 'udlaan', 'udlejet', 'loaned', 'borrowed'];
   private readonly nonFunctionalStatusTokens = ['ikke', 'defekt', 'skadet', 'service', 'reparation'];
@@ -46,6 +57,7 @@ export class DashboardComponent implements OnInit {
     this.dashboardService.getStatusSummary().subscribe({
       next: (summary) => {
         this.summary = summary;
+        this.updateChartData(summary);
         this.isLoading = false;
       },
       error: (error: HttpErrorResponse) => {
@@ -69,6 +81,10 @@ export class DashboardComponent implements OnInit {
 
   goToActiveLoans(): void {
     this.router.navigate(['/dashboard/active-loans']);
+  }
+
+  goToAllItems(): void {
+    this.router.navigate(['/dashboard/items']);
   }
 
   getStatusCounts(): DashboardStatusCount[] {
@@ -140,5 +156,15 @@ export class DashboardComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '')
       .toLowerCase();
+  }
+
+  private updateChartData(summary: DashboardSummary): void {
+    const availableCount = Math.max(summary.totalItemCount - summary.activeLoanCount, 0);
+    this.chartData = [
+      { name: 'Samlet antal', value: summary.totalItemCount },
+      { name: 'Tilgængelige', value: availableCount },
+      { name: 'Udlånte', value: summary.activeLoanCount },
+      { name: 'Ikke-fungerende', value: summary.nonFunctionalItemCount },
+    ];
   }
 }
