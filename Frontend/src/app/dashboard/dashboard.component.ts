@@ -136,6 +136,15 @@ export class DashboardComponent implements OnInit {
     return this.borrowedStatusTokens.some((token) => normalized.includes(token));
   }
 
+  getBarWidth(value: number): string {
+    if (this.maxChartValue === 0) {
+      return '0%';
+    }
+
+    const width = (value / this.maxChartValue) * 100;
+    return `${width.toFixed(1)}%`;
+  }
+
   private isNonFunctionalStatus(statusName: string): boolean {
     const normalized = this.normalizeStatusName(statusName);
 

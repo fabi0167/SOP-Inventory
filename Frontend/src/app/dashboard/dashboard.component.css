@@ -104,4 +104,8 @@ button.status-card:focus-visible {
   .status-card.quick-stat-card {
     min-height: 110px;
   }
+
+  .chart-label {
+    width: 120px;
+  }
 }
