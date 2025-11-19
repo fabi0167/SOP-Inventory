@@ -27,7 +27,7 @@
         </div>
 
         <div class="col-md-4 col-lg-3">
-          <label for="group-filter" class="form-label">Model</label>
+          <label for="group-filter" class="form-label">Gruppe</label>
           <select
             id="group-filter"
             class="form-select"
@@ -35,7 +35,7 @@
             name="groupFilter"
             (change)="onFilterChange()"
           >
-            <option value="">Alle modeller</option>
+            <option value="">Alle grupper</option>
             <option *ngFor="let group of itemGroups" [value]="group.id">{{ group.modelName }}</option>
           </select>
         </div>
@@ -60,7 +60,7 @@
             id="item-search"
             type="text"
             class="form-control"
-            placeholder="Søg efter serienummer, model, lokale eller status"
+            placeholder="Søg efter serienummer, gruppe, lokale eller status"
             name="search"
             [(ngModel)]="searchTerm"
             (ngModelChange)="onSearchChange($event)"
@@ -92,7 +92,7 @@
             <thead class="table-light">
               <tr>
                 <th scope="col">Serienummer</th>
-                <th scope="col">Model</th>
+                <th scope="col">Gruppe</th>
                 <th scope="col">Type</th>
                 <th scope="col">Lokation</th>
                 <th scope="col">Status</th>

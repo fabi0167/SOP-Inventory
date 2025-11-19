@@ -81,24 +81,23 @@ button.status-card:focus-visible {
 }
 
 .status-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: block;
+  padding: 0.5rem 0;
+  min-height: 320px;
 }
 
-.chart-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.status-chart ::ng-deep ngx-charts-bar-vertical {
+  display: block;
 }
 
-.chart-label {
-  width: 160px;
-  font-weight: 600;
+.status-chart ::ng-deep .bar-vertical-2d {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
 }
 
-.progress {
-  height: 1.5rem;
+.status-chart ::ng-deep .data-label {
+  font-weight: 700;
 }
 
 @media (max-width: 576px) {

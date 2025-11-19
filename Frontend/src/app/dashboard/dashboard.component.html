@@ -70,19 +70,30 @@
       <div class="card shadow-sm h-100">
         <div class="card-body">
           <h5 class="card-title">Genstande efter status (diagram)</h5>
-          <div *ngIf="chartData.length > 0" class="status-chart" role="img" aria-label="Søjlediagram over genstandes tilstande">
-            <div *ngFor="let bar of chartData" class="chart-row">
-              <div class="chart-label">{{ bar.label }}</div>
-              <div class="progress flex-grow-1">
-                <div class="progress-bar" [class]="'progress-bar bg-' + bar.variant" [style.width]="getBarWidth(bar.value)">
-                  {{ bar.value }}
-                </div>
-              </div>
+          <ng-container *ngIf="chartData.length > 0; else emptyChart">
+            <div class="status-chart" role="img" aria-label="Søjlediagram over genstandes tilstande">
+              <ngx-charts-bar-vertical
+                [results]="chartData"
+                [scheme]="chartColorScheme"
+                [customColors]="chartCustomColors"
+                [gradient]="true"
+                [animations]="false"
+                [xAxis]="true"
+                [yAxis]="true"
+                [yScaleMin]="0"
+                [roundEdges]="true"
+                [tooltipDisabled]="false"
+                [showDataLabel]="true"
+                [barPadding]="32"
+                aria-label="Vertikalt søjlediagram over genstandes status"
+              ></ngx-charts-bar-vertical>
             </div>
-          </div>
-          <div *ngIf="chartData.length === 0" class="text-muted status-empty">
-            Ingen data til diagrammet.
-          </div>
+          </ng-container>
+          <ng-template #emptyChart>
+            <div class="text-muted status-empty">
+              Ingen data til diagrammet.
+            </div>
+          </ng-template>
         </div>
       </div>
     </div>
