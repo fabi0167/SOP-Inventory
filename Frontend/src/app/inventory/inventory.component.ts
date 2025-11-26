@@ -25,7 +25,10 @@ import { HttpErrorResponse } from '@angular/common/http';
   imports: [NavbarComponent, CommonModule, FormsModule],
   templateUrl: './inventory.component.html',
   styleUrls: ['./inventory.component.css'],
+  
 })
+
+
 export class InventoryComponent implements OnInit {
   itemTypes: ItemType[] = [];
   itemType: ItemType = { id: 0, typeName: '', presetId: 0 };
@@ -144,6 +147,17 @@ export class InventoryComponent implements OnInit {
     private presetService: PresetService 
   ) { }
 
+ isBooleanField(key: string): boolean {
+  if (!this.selectedPresetData) return false;
+
+  const typeDef = this.selectedPresetData[key];
+
+  // Reuse getInputType: if the type maps to a checkbox, we treat it as a boolean field
+  return this.getInputType(typeDef) === 'checkbox';
+}
+
+
+
   ngOnInit(): void {
     this.currentUser = JSON.parse(
       localStorage.getItem('currentUser') as string
@@ -155,14 +169,19 @@ export class InventoryComponent implements OnInit {
     this.getAddresses();
   }
 
-  getInputType(type: string): string {
-    if (!type) return 'text';
-    type = type.toLowerCase();
+  getInputType(type: any): string {
+  if (!type) return 'text';
 
-    if (type.includes('bool')) return 'checkbox';
-    if (type.includes('int') || type.includes('decimal') || type.includes('number')) return 'number';
-    return 'text';
+  const typeStr = String(type).toLowerCase();
+
+  if (typeStr.includes('bool')) return 'checkbox';
+  if (typeStr.includes('int') || typeStr.includes('decimal') || typeStr.includes('number')) {
+    return 'number';
   }
+
+  return 'text';
+}
+
 
   
   onItemGroupChange() {
@@ -175,7 +194,11 @@ export class InventoryComponent implements OnInit {
     if (!presetId) {
       this.selectedPresetData = null;
       return;
+
+      
     }
+ 
+
 
     // 👇 use your PresetService to get the preset data
     this.presetService.findById(presetId).subscribe({

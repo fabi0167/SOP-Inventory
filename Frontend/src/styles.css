@@ -1,3 +1,6 @@
+
+
+
 :root {
   /* Light theme (default) */
   --bg: #ffffff;
@@ -15,6 +18,7 @@
   --btn-bg: var(--brand);
   --btn-text: var(--brand-contrast);
 }
+
 
 /* === Dark theme tokens === */
 :root[data-theme="dark"] {
@@ -44,6 +48,81 @@
   --btn-bg: var(--brand);
   --btn-text: #0b1220;
   --closeBtncolor: #ffffff;
+}
+:root[data-theme="dark"] {
+  --ngx-charts-text-color: #e0e0e0;
+  --ngx-charts-axis-line-color: #777;
+  --ngx-charts-background: #1e1e1e;
+}
+
+:root:not([data-theme="dark"]) .ngx-charts-legend .legend-labels,
+:root:not(.dark-theme) .ngx-charts-legend .legend-labels,
+:root:not([data-theme="dark"]) ngx-charts-legend .legend-labels,
+:root:not(.dark-theme) ngx-charts-legend .legend-labels {
+  background-color: #3c3b3d09 !important;
+}
+
+/* Strong dark-mode override for legend label hover color */
+html.dark-theme .chart-legend .legend-label:hover,
+html.dark-theme .chart-legend .legend-label:hover .legend-label-text,
+:root.dark-theme .chart-legend .legend-label:hover,
+:root.dark-theme .chart-legend .legend-label:hover .legend-label-text,
+html.dark-theme .legend-label:hover,
+:root.dark-theme .legend-label:hover,
+html.dark-theme .legend-label:hover .legend-label-text,
+:root.dark-theme .legend-label:hover .legend-label-text {
+  color: #e5e7eb !important; /* pick the light color you want */
+}
+
+/* ensure inner spans don't keep an inherited darker color */
+html.dark-theme .chart-legend .legend-label:hover span,
+:root.dark-theme .chart-legend .legend-label:hover span {
+  color: inherit !important;
+}
+
+/* Dark-mode: set legend label hover color */
+:root[data-theme="dark"] .chart-legend .legend-label:hover,
+:root[data-theme="dark"] .chart-legend .legend-label:hover .legend-label-text,
+:root[data-theme="dark"] .legend-label:hover,
+:root[data-theme="dark"] .legend-label:hover .legend-label-text {
+  color: #e5e7eb !important; /* pick desired light hover color for dark mode */
+}
+
+/* Light-mode: ensure hover uses the default (or inherits your light text color) */
+:root:not([data-theme="dark"]) .chart-legend .legend-label:hover,
+:root:not([data-theme="dark"]) .chart-legend .legend-label:hover .legend-label-text,
+:root:not([data-theme="dark"]) .legend-label:hover,
+:root:not([data-theme="dark"]) .legend-label:hover .legend-label-text {
+  color: inherit !important;
+}
+
+/* Light-mode: legend label text color when NOT hovered */
+:root:not([data-theme="dark"]) .ngx-charts-legend .legend-labels .legend-label:not(:hover) .legend-label-text,
+:root:not(.dark-theme) .ngx-charts-legend .legend-labels .legend-label:not(:hover) .legend-label-text,
+:root:not([data-theme="dark"]) .chart-legend .legend-label:not(:hover) .legend-label-text,
+:root:not(.dark-theme) .chart-legend .legend-label:not(:hover) .legend-label-text {
+  color: #525252 !important; /* change this hex to the color you want */
+}
+
+/* Text inside chart */
+:root[data-theme="dark"] ngx-charts-bar-vertical text {
+  fill: var(--ngx-charts-text-color);
+}
+
+/* Grid lines */
+:root[data-theme="dark"] .gridline-path {
+  stroke: #444 !important;
+}
+
+/* Bars */
+:root[data-theme="dark"] .bar {
+  stroke: none;
+  opacity: 0.9;
+}
+
+/* Background behind chart */
+:root[data-theme="dark"] .chart-plot-background {
+  fill: var(--ngx-charts-background);
 }
 
 /* === Force the page to actually use --bg in dark mode and neutralize light helpers === */

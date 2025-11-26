@@ -12,6 +12,8 @@
   </div>
 
   <div *ngIf="!isLoading && !errorMessage && summary" class="row g-3">
+
+    <!-- Quick stats -->
     <div class="col-12">
       <div class="card shadow-sm h-100">
         <div class="card-body">
@@ -42,6 +44,7 @@
       </div>
     </div>
 
+    <!-- Status cards -->
     <div class="col-12">
       <div class="card shadow-sm h-100">
         <div class="card-body">
@@ -66,21 +69,36 @@
       </div>
     </div>
 
+    <!-- Charts: bar (left) + pie (right) -->
     <div class="col-12">
       <div class="card shadow-sm h-100">
         <div class="card-body">
-          <h5 class="card-title">Genstande efter status (diagram)</h5>
-          <ng-container *ngIf="chartData.length > 0; else emptyChart">
-            <div class="status-chart" role="img" aria-label="Søjlediagram over genstandes tilstande">
+          <!-- Header row: left = bar chart title, right = pie chart title (aligned on same line) -->
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <h5 class="card-title mb-0">Genstande efter status (diagram)</h5>
+            <h5 class="card-title mb-0 text-center">Genstande efter status (Procentvis)</h5>
+          </div>
+
+          <div class="row" *ngIf="chartData?.length; else emptyChart">
+            <div class="col-md-8">
               <ngx-charts-bar-vertical
                 [results]="chartData"
-                [scheme]="chartColorScheme"
-                [customColors]="chartCustomColors"
+                [scheme]="NgxColor"
+                [customColors]="NgxColor"
+                [view]="chartView"
                 [gradient]="true"
                 [animations]="false"
+                [legend]="true"
+                [legendPosition]="legendPosition"
                 [xAxis]="true"
                 [yAxis]="true"
+                [showXAxisLabel]="showXAxisLabel"
+                [xAxisLabel]="xAxisLabel"
+                [showYAxisLabel]="showYAxisLabel"
+                [yAxisLabel]="yAxisLabel"
                 [yScaleMin]="0"
+                [yScaleMax]="maxChartValue"
+                [yAxisTicks]="yTicks"
                 [roundEdges]="true"
                 [tooltipDisabled]="false"
                 [showDataLabel]="true"
@@ -88,7 +106,23 @@
                 aria-label="Vertikalt søjlediagram over genstandes status"
               ></ngx-charts-bar-vertical>
             </div>
-          </ng-container>
+
+            <div class="col-md-4 d-flex flex-column align-items-center justify-content-start mt-md-4">
+              <!-- right title removed (moved to header) -->
+              <div style="width:100%; max-width:320px;">
+                <apx-chart
+                  *ngIf="pieSeries?.length"
+                  [series]="pieSeries"
+                  [chart]="pieChart"
+                  [labels]="pieLabels"
+                  [responsive]="pieResponsive"
+                  [legend]="pieLegend"
+                  [colors]="pieColors"
+                ></apx-chart>
+              </div>
+            </div>
+          </div>
+
           <ng-template #emptyChart>
             <div class="text-muted status-empty">
               Ingen data til diagrammet.
@@ -96,6 +130,3 @@
           </ng-template>
         </div>
       </div>
-    </div>
-  </div>
-</div>

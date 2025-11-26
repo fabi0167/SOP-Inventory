@@ -310,25 +310,42 @@
 
 
       <!--Item Details-->
+      <!--Item Details-->
       <div *ngIf="selectedPresetData" class="preset-fields-container mt-3">
         <h5>Genstand Detaljer:</h5>
 
         <div class="details-grid">
           <div *ngFor="let key of objectKeys(selectedPresetData)" class="form-group">
+            <!-- Label + "include/skip" checkbox (same as before) -->
             <div class="label-with-checkbox">
               <label [for]="'skip-' + key">{{ key }}</label>
               <input type="checkbox" [id]="'skip-' + key" [(ngModel)]="enabledFields[key]" (change)="toggleField(key)"
                 [name]="'skip-' + key" />
             </div>
 
-            <input [type]="getInputType(selectedPresetData[key])" class="form-control" [id]="key"
-              [(ngModel)]="itemInfoObj[key]" [name]="key" [disabled]="!enabledFields[key]" />
+            <!-- NON-BOOLEAN FIELDS: normal input (like before) -->
+            <ng-container *ngIf="!isBooleanField(key); else booleanField">
+              <input [type]="getInputType(selectedPresetData[key])" class="form-control" [id]="key"
+                [(ngModel)]="itemInfoObj[key]" [name]="key" [disabled]="!enabledFields[key]" />
+            </ng-container>
+
+            <!-- BOOLEAN FIELDS: only a checkbox, no text box -->
+            <ng-template #booleanField>
+              <div class="form-check mt-1">
+                <input type="checkbox" class="form-check-input" [id]="key"
+                  [ngModel]="itemInfoObj[key] === true || itemInfoObj[key] === 'true'"
+                  (ngModelChange)="itemInfoObj[key] = $event" [name]="key" [disabled]="!enabledFields[key]" />
+                <label class="form-check-label" [for]="key">
+                  {{ (itemInfoObj[key] === true || itemInfoObj[key] === 'true') ? 'Ja' : 'Nej' }}
+                </label>
+              </div>
+            </ng-template>
+
           </div>
-
         </div>
-      </div>
+      </div> <!-- ✅ close preset-fields-container -->
 
-
+      <!-- Image upload ALWAYS available -->
       <div class="form-group">
         <label for="itemImage">Genstandbillede:</label>
         <input type="file" class="form-control" id="userImage" accept="image/*" (change)="onImageSelected($event)"
