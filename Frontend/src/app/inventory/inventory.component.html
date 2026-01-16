@@ -345,6 +345,59 @@
         </div>
       </div> <!-- ✅ close preset-fields-container -->
 
+      <div class="mt-3">
+        <h5>Tilføj eget felt</h5>
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label for="customFieldKey">Feltnavn</label>
+            <input
+              id="customFieldKey"
+              type="text"
+              class="form-control"
+              [(ngModel)]="customFieldKey"
+              name="customFieldKey"
+              placeholder="Fx Farve" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="customFieldValue">Værdi</label>
+            <input
+              id="customFieldValue"
+              type="text"
+              class="form-control"
+              [(ngModel)]="customFieldValue"
+              name="customFieldValue"
+              placeholder="Fx Sort" />
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button type="button" class="btn btn-outline-primary" (click)="addCustomField()">
+              Tilføj
+            </button>
+          </div>
+        </div>
+        <div *ngIf="customFieldError" class="text-danger mt-1">{{ customFieldError }}</div>
+
+        <div *ngIf="customFieldKeys.length > 0" class="mt-3">
+          <h6>Brugerdefinerede felter</h6>
+          <div class="row g-2" *ngFor="let key of customFieldKeys">
+            <div class="col-12 col-md-4 d-flex align-items-center">
+              <strong>{{ key }}</strong>
+            </div>
+            <div class="col-12 col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="itemInfoObj[key]"
+                [name]="'custom-' + key" />
+            </div>
+            <div class="col-12 col-md-2 d-grid">
+              <button type="button" class="btn btn-outline-danger" (click)="removeCustomField(key)">
+                Fjern
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Image upload ALWAYS available -->
       <div class="form-group">
         <label for="itemImage">Genstandbillede:</label>
