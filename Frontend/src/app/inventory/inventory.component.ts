@@ -132,6 +132,10 @@ export class InventoryComponent implements OnInit {
 
   itemInfoObj: { [key: string]: any } = {};
   enabledFields: { [key: string]: boolean } = {};
+  customFieldKeys: string[] = [];
+  customFieldKey: string = '';
+  customFieldValue: string = '';
+  customFieldError: string = '';
 
 
 
@@ -206,11 +210,13 @@ export class InventoryComponent implements OnInit {
         try {
           this.selectedPresetData = JSON.parse(preset.data);
           console.log(this.selectedPresetData)
-
-          this.itemInfoObj = {};
+          const customFields = this.getCustomFieldsSnapshot();
+          this.itemInfoObj = { ...customFields };
           this.enabledFields = {};
           for (const key of Object.keys(this.selectedPresetData)) {
-            this.itemInfoObj[key] = null;
+            if (!(key in this.itemInfoObj)) {
+              this.itemInfoObj[key] = null;
+            }
             this.enabledFields[key] = true;
           }
         } catch (e) {
@@ -527,6 +533,10 @@ export class InventoryComponent implements OnInit {
       this.newItem = { id: 0, itemGroupId: 0, roomId: 0, serialNumber: '', itemImageUrl: '', itemInfo: '' };
       this.itemInfoObj = {};
       this.enabledFields = {};
+      this.customFieldKeys = [];
+      this.customFieldKey = '';
+      this.customFieldValue = '';
+      this.customFieldError = '';
       this.selectedImage = null;
       this.selectedImagePreview = null;
 
@@ -597,6 +607,9 @@ export class InventoryComponent implements OnInit {
   // Close New Item Modal
   closeNewItemModal(): void {
     this.showModal = false;
+    this.customFieldKey = '';
+    this.customFieldValue = '';
+    this.customFieldError = '';
   }
 
   // Fix the openEditItemModal method
@@ -703,10 +716,38 @@ export class InventoryComponent implements OnInit {
     this.itemInfoObj[key] = null;
   }
 }
+
+  addCustomField(): void {
+    const key = this.customFieldKey.trim();
+    if (!key) {
+      this.customFieldError = 'Feltets navn er påkrævet.';
+      return;
+    }
+
+    if (this.itemInfoObj[key] !== undefined) {
+      this.customFieldError = 'Feltet findes allerede.';
+      return;
+    }
+
+    this.itemInfoObj[key] = this.customFieldValue?.trim() ?? '';
+    this.customFieldKeys.push(key);
+    this.customFieldKey = '';
+    this.customFieldValue = '';
+    this.customFieldError = '';
+  }
+
+  removeCustomField(key: string): void {
+    delete this.itemInfoObj[key];
+    this.customFieldKeys = this.customFieldKeys.filter((existingKey) => existingKey !== key);
+  }
+
+  private getCustomFieldsSnapshot(): { [key: string]: any } {
+    return this.customFieldKeys.reduce((acc, key) => {
+      acc[key] = this.itemInfoObj[key];
+      return acc;
+    }, {} as { [key: string]: any });
+  }
 }
-
-
-
 
 
 
