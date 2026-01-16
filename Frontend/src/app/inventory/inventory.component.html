@@ -193,7 +193,7 @@
       <div class="form-group">
         <label for="editItemGroupId">Gendstandsgruppe</label>
         <select class="form-control" id="editItemGroupId" [(ngModel)]="selectedItem.itemGroupId" name="editItemGroupId"
-          required>
+          required (change)="onEditItemGroupChange()">
           <option *ngFor="let itemGroup of itemGroups" [value]="itemGroup.id">
             {{ itemGroup.modelName }}
           </option>
@@ -212,6 +212,90 @@
         <label for="editSerialNumber">Serienummer</label>
         <input type="text" class="form-control" id="editSerialNumber" [(ngModel)]="selectedItem.serialNumber"
           name="editSerialNumber" />
+      </div>
+
+      <div *ngIf="editPresetData" class="preset-fields-container mt-3">
+        <h5>Genstand Detaljer:</h5>
+
+        <div class="details-grid">
+          <div *ngFor="let key of objectKeys(editPresetData)" class="form-group">
+            <div class="label-with-checkbox">
+              <label [for]="'edit-skip-' + key">{{ key }}</label>
+              <input type="checkbox" [id]="'edit-skip-' + key" [(ngModel)]="editEnabledFields[key]"
+                (change)="toggleEditField(key)" [name]="'edit-skip-' + key" />
+            </div>
+
+            <ng-container *ngIf="!isEditBooleanField(key); else editBooleanField">
+              <input [type]="getInputType(editPresetData[key])" class="form-control" [id]="'edit-' + key"
+                [(ngModel)]="editItemInfoObj[key]" [name]="'edit-' + key" [disabled]="!editEnabledFields[key]" />
+            </ng-container>
+
+            <ng-template #editBooleanField>
+              <div class="form-check mt-1">
+                <input type="checkbox" class="form-check-input" [id]="'edit-' + key"
+                  [ngModel]="editItemInfoObj[key] === true || editItemInfoObj[key] === 'true'"
+                  (ngModelChange)="editItemInfoObj[key] = $event" [name]="'edit-' + key"
+                  [disabled]="!editEnabledFields[key]" />
+                <label class="form-check-label" [for]="'edit-' + key">
+                  {{ (editItemInfoObj[key] === true || editItemInfoObj[key] === 'true') ? 'Ja' : 'Nej' }}
+                </label>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <h5>Tilføj eget felt</h5>
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label for="editCustomFieldKey">Feltnavn</label>
+            <input
+              id="editCustomFieldKey"
+              type="text"
+              class="form-control"
+              [(ngModel)]="editCustomFieldKey"
+              name="editCustomFieldKey"
+              placeholder="Fx Farve" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="editCustomFieldValue">Værdi</label>
+            <input
+              id="editCustomFieldValue"
+              type="text"
+              class="form-control"
+              [(ngModel)]="editCustomFieldValue"
+              name="editCustomFieldValue"
+              placeholder="Fx Sort" />
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button type="button" class="btn btn-outline-primary" (click)="addEditCustomField()">
+              Tilføj
+            </button>
+          </div>
+        </div>
+        <div *ngIf="editCustomFieldError" class="text-danger mt-1">{{ editCustomFieldError }}</div>
+
+        <div *ngIf="editCustomFieldKeys.length > 0" class="mt-3">
+          <h6>Brugerdefinerede felter</h6>
+          <div class="row g-2" *ngFor="let key of editCustomFieldKeys">
+            <div class="col-12 col-md-4 d-flex align-items-center">
+              <strong>{{ key }}</strong>
+            </div>
+            <div class="col-12 col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="editItemInfoObj[key]"
+                [name]="'edit-custom-' + key" />
+            </div>
+            <div class="col-12 col-md-2 d-grid">
+              <button type="button" class="btn btn-outline-danger" (click)="removeEditCustomField(key)">
+                Fjern
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="form-group">
@@ -344,6 +428,59 @@
           </div>
         </div>
       </div> <!-- ✅ close preset-fields-container -->
+
+      <div class="mt-3">
+        <h5>Tilføj eget felt</h5>
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label for="customFieldKey">Feltnavn</label>
+            <input
+              id="customFieldKey"
+              type="text"
+              class="form-control"
+              [(ngModel)]="customFieldKey"
+              name="customFieldKey"
+              placeholder="Fx Farve" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label for="customFieldValue">Værdi</label>
+            <input
+              id="customFieldValue"
+              type="text"
+              class="form-control"
+              [(ngModel)]="customFieldValue"
+              name="customFieldValue"
+              placeholder="Fx Sort" />
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button type="button" class="btn btn-outline-primary" (click)="addCustomField()">
+              Tilføj
+            </button>
+          </div>
+        </div>
+        <div *ngIf="customFieldError" class="text-danger mt-1">{{ customFieldError }}</div>
+
+        <div *ngIf="customFieldKeys.length > 0" class="mt-3">
+          <h6>Brugerdefinerede felter</h6>
+          <div class="row g-2" *ngFor="let key of customFieldKeys">
+            <div class="col-12 col-md-4 d-flex align-items-center">
+              <strong>{{ key }}</strong>
+            </div>
+            <div class="col-12 col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="itemInfoObj[key]"
+                [name]="'custom-' + key" />
+            </div>
+            <div class="col-12 col-md-2 d-grid">
+              <button type="button" class="btn btn-outline-danger" (click)="removeCustomField(key)">
+                Fjern
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Image upload ALWAYS available -->
       <div class="form-group">

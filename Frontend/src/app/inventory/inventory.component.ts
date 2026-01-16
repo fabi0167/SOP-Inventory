@@ -132,6 +132,17 @@ export class InventoryComponent implements OnInit {
 
   itemInfoObj: { [key: string]: any } = {};
   enabledFields: { [key: string]: boolean } = {};
+  customFieldKeys: string[] = [];
+  customFieldKey: string = '';
+  customFieldValue: string = '';
+  customFieldError: string = '';
+  editPresetData: any = null;
+  editItemInfoObj: { [key: string]: any } = {};
+  editEnabledFields: { [key: string]: boolean } = {};
+  editCustomFieldKeys: string[] = [];
+  editCustomFieldKey: string = '';
+  editCustomFieldValue: string = '';
+  editCustomFieldError: string = '';
 
 
 
@@ -153,6 +164,13 @@ export class InventoryComponent implements OnInit {
   const typeDef = this.selectedPresetData[key];
 
   // Reuse getInputType: if the type maps to a checkbox, we treat it as a boolean field
+  return this.getInputType(typeDef) === 'checkbox';
+}
+
+ isEditBooleanField(key: string): boolean {
+  if (!this.editPresetData) return false;
+
+  const typeDef = this.editPresetData[key];
   return this.getInputType(typeDef) === 'checkbox';
 }
 
@@ -206,11 +224,13 @@ export class InventoryComponent implements OnInit {
         try {
           this.selectedPresetData = JSON.parse(preset.data);
           console.log(this.selectedPresetData)
-
-          this.itemInfoObj = {};
+          const customFields = this.getCustomFieldsSnapshot();
+          this.itemInfoObj = { ...customFields };
           this.enabledFields = {};
           for (const key of Object.keys(this.selectedPresetData)) {
-            this.itemInfoObj[key] = null;
+            if (!(key in this.itemInfoObj)) {
+              this.itemInfoObj[key] = null;
+            }
             this.enabledFields[key] = true;
           }
         } catch (e) {
@@ -221,6 +241,45 @@ export class InventoryComponent implements OnInit {
       error: (err: HttpErrorResponse) => {
         console.error('Failed to fetch preset', err);
         this.selectedPresetData = null;
+      },
+    });
+  }
+
+  onEditItemGroupChange(): void {
+    const groupId = +this.selectedItem.itemGroupId;
+    const selectedGroup = this.itemGroups.find(ig => ig.id === groupId);
+    const presetId = selectedGroup?.itemType?.presetId;
+
+    if (!presetId) {
+      this.editPresetData = null;
+      this.editEnabledFields = {};
+      this.editCustomFieldKeys = Object.keys(this.editItemInfoObj || {});
+      return;
+    }
+
+    this.presetService.findById(presetId).subscribe({
+      next: (preset: Preset) => {
+        try {
+          this.editPresetData = JSON.parse(preset.data);
+          const presetKeys = Object.keys(this.editPresetData);
+          this.editCustomFieldKeys = Object.keys(this.editItemInfoObj || {}).filter(
+            (key) => !presetKeys.includes(key)
+          );
+          this.editEnabledFields = {};
+          for (const key of presetKeys) {
+            if (!(key in this.editItemInfoObj)) {
+              this.editItemInfoObj[key] = null;
+            }
+            this.editEnabledFields[key] = true;
+          }
+        } catch (e) {
+          console.error('Invalid preset JSON', e);
+          this.editPresetData = null;
+        }
+      },
+      error: (err: HttpErrorResponse) => {
+        console.error('Failed to fetch preset', err);
+        this.editPresetData = null;
       },
     });
   }
@@ -527,6 +586,10 @@ export class InventoryComponent implements OnInit {
       this.newItem = { id: 0, itemGroupId: 0, roomId: 0, serialNumber: '', itemImageUrl: '', itemInfo: '' };
       this.itemInfoObj = {};
       this.enabledFields = {};
+      this.customFieldKeys = [];
+      this.customFieldKey = '';
+      this.customFieldValue = '';
+      this.customFieldError = '';
       this.selectedImage = null;
       this.selectedImagePreview = null;
 
@@ -544,6 +607,8 @@ export class InventoryComponent implements OnInit {
   async editItem(): Promise<void> {
     // Ensure that there is a selected item to edit
     if (!this.selectedItem) return;
+
+    this.selectedItem.itemInfo = JSON.stringify(this.editItemInfoObj);
 
     // Send an update request to the item service
     this.itemService.update(this.selectedItem).subscribe(
@@ -563,6 +628,13 @@ export class InventoryComponent implements OnInit {
           serialNumber: '',
           itemImageUrl: ''
         };
+        this.editPresetData = null;
+        this.editItemInfoObj = {};
+        this.editEnabledFields = {};
+        this.editCustomFieldKeys = [];
+        this.editCustomFieldKey = '';
+        this.editCustomFieldValue = '';
+        this.editCustomFieldError = '';
 
         // Reload the page to reflect the changes (Consider updating the UI dynamically instead)
         window.location.reload();
@@ -597,11 +669,23 @@ export class InventoryComponent implements OnInit {
   // Close New Item Modal
   closeNewItemModal(): void {
     this.showModal = false;
+    this.customFieldKey = '';
+    this.customFieldValue = '';
+    this.customFieldError = '';
   }
 
   // Fix the openEditItemModal method
   openEditItemModal(item: Item): void {
     this.selectedItem = { ...item };
+    this.editItemInfoObj = {};
+    if (item.itemInfo) {
+      try {
+        this.editItemInfoObj = JSON.parse(item.itemInfo);
+      } catch (e) {
+        console.error('Invalid itemInfo JSON', e);
+        this.editItemInfoObj = {};
+      }
+    }
 
     // Debug: Log the item to see what properties it actually has
     console.log('Item object:', item);
@@ -624,6 +708,7 @@ export class InventoryComponent implements OnInit {
     this.imageUpdated = false;
     this.uploadError = false;
 
+    this.onEditItemGroupChange();
     this.showEditModal = true;
   }
 
@@ -637,6 +722,13 @@ export class InventoryComponent implements OnInit {
       serialNumber: '',
       itemImageUrl: ''
     };
+    this.editPresetData = null;
+    this.editItemInfoObj = {};
+    this.editEnabledFields = {};
+    this.editCustomFieldKeys = [];
+    this.editCustomFieldKey = '';
+    this.editCustomFieldValue = '';
+    this.editCustomFieldError = '';
 
     // Reset image-related properties
     this.selectedImage = null;
@@ -703,14 +795,68 @@ export class InventoryComponent implements OnInit {
     this.itemInfoObj[key] = null;
   }
 }
+
+  toggleEditField(key: string) {
+  if (!this.editEnabledFields[key]) {
+    this.editItemInfoObj[key] = null;
+  }
 }
 
+  addCustomField(): void {
+    const key = this.customFieldKey.trim();
+    if (!key) {
+      this.customFieldError = 'Feltets navn er påkrævet.';
+      return;
+    }
 
+    if (this.itemInfoObj[key] !== undefined) {
+      this.customFieldError = 'Feltet findes allerede.';
+      return;
+    }
 
+    this.itemInfoObj[key] = this.customFieldValue?.trim() ?? '';
+    this.customFieldKeys.push(key);
+    this.customFieldKey = '';
+    this.customFieldValue = '';
+    this.customFieldError = '';
+  }
 
+  removeCustomField(key: string): void {
+    delete this.itemInfoObj[key];
+    this.customFieldKeys = this.customFieldKeys.filter((existingKey) => existingKey !== key);
+  }
 
+  private getCustomFieldsSnapshot(): { [key: string]: any } {
+    return this.customFieldKeys.reduce((acc, key) => {
+      acc[key] = this.itemInfoObj[key];
+      return acc;
+    }, {} as { [key: string]: any });
+  }
 
+  addEditCustomField(): void {
+    const key = this.editCustomFieldKey.trim();
+    if (!key) {
+      this.editCustomFieldError = 'Feltets navn er påkrævet.';
+      return;
+    }
 
+    if (this.editItemInfoObj[key] !== undefined) {
+      this.editCustomFieldError = 'Feltet findes allerede.';
+      return;
+    }
+
+    this.editItemInfoObj[key] = this.editCustomFieldValue?.trim() ?? '';
+    this.editCustomFieldKeys.push(key);
+    this.editCustomFieldKey = '';
+    this.editCustomFieldValue = '';
+    this.editCustomFieldError = '';
+  }
+
+  removeEditCustomField(key: string): void {
+    delete this.editItemInfoObj[key];
+    this.editCustomFieldKeys = this.editCustomFieldKeys.filter((existingKey) => existingKey !== key);
+  }
+}
 
 
 

@@ -156,6 +156,10 @@ export class ItemDetailsComponent implements OnInit {
 
   itemInfoObj: any = {};
   objectKeys = Object.keys;
+  customFieldKeys: string[] = [];
+  customFieldKey: string = '';
+  customFieldValue: string = '';
+  customFieldError: string = '';
 
   constructor(
     private itemService: ItemService,
@@ -212,13 +216,18 @@ export class ItemDetailsComponent implements OnInit {
           try {
             this.selectedPresetData = JSON.parse(preset.data);
             console.log(this.selectedPresetData)
-  
-            this.itemInfoObj = {};
+            const customFields = this.getCustomFieldsSnapshot();
+            this.itemInfoObj = { ...customFields };
             this.enabledFields = {};
             for (const key of Object.keys(this.selectedPresetData)) {
-              this.itemInfoObj[key] = null;
+              if (!(key in this.itemInfoObj)) {
+                this.itemInfoObj[key] = null;
+              }
               this.enabledFields[key] = true;
             }
+            this.customFieldKeys = Object.keys(this.itemInfoObj).filter(
+              (key) => !(key in this.selectedPresetData)
+            );
           } catch (e) {
             console.error('Invalid preset JSON', e);
             this.selectedPresetData = null;
@@ -287,6 +296,7 @@ export class ItemDetailsComponent implements OnInit {
     } else {
       this.itemInfoObj = {};
     }
+    this.customFieldKeys = Object.keys(this.itemInfoObj);
 
   }
 
@@ -463,6 +473,7 @@ export class ItemDetailsComponent implements OnInit {
     if (this.imageUpdated && !this.selectedImage && !this.selectedImagePreview) {
       this.selectedItem.itemImageUrl = ''; // ✅ Clear image
     }
+    this.selectedItem.itemInfo = JSON.stringify(this.itemInfoObj);
     // Call update API
     this.itemService.update(this.selectedItem).subscribe({
       next: (response) => {
@@ -571,6 +582,18 @@ export class ItemDetailsComponent implements OnInit {
   // Open Edit modal with the selected item
   openEditModal(item: Item): void {
     this.selectedItem = { ...item };
+    this.newItem.itemGroupId = item.itemGroupId;
+    this.itemInfoObj = {};
+    if (item.itemInfo) {
+      try {
+        this.itemInfoObj = JSON.parse(item.itemInfo);
+      } catch (e) {
+        console.error('Invalid itemInfo JSON', e);
+        this.itemInfoObj = {};
+      }
+    }
+    this.customFieldKeys = Object.keys(this.itemInfoObj);
+    this.onItemGroupChange();
 
     // Initialize the image preview with the existing image
     if (item.itemImageUrl) {
@@ -597,6 +620,10 @@ export class ItemDetailsComponent implements OnInit {
       itemGroupId: 0,
       serialNumber: '',
     };
+    this.customFieldKeys = [];
+    this.customFieldKey = '';
+    this.customFieldValue = '';
+    this.customFieldError = '';
   }
 
   // Open status modal and reset the new status
@@ -650,4 +677,35 @@ export class ItemDetailsComponent implements OnInit {
     this.itemInfoObj[key] = null;
   }
 }
+
+  addCustomField(): void {
+    const key = this.customFieldKey.trim();
+    if (!key) {
+      this.customFieldError = 'Feltets navn er påkrævet.';
+      return;
+    }
+
+    if (this.itemInfoObj[key] !== undefined) {
+      this.customFieldError = 'Feltet findes allerede.';
+      return;
+    }
+
+    this.itemInfoObj[key] = this.customFieldValue?.trim() ?? '';
+    this.customFieldKeys.push(key);
+    this.customFieldKey = '';
+    this.customFieldValue = '';
+    this.customFieldError = '';
+  }
+
+  removeCustomField(key: string): void {
+    delete this.itemInfoObj[key];
+    this.customFieldKeys = this.customFieldKeys.filter((existingKey) => existingKey !== key);
+  }
+
+  private getCustomFieldsSnapshot(): { [key: string]: any } {
+    return this.customFieldKeys.reduce((acc, key) => {
+      acc[key] = this.itemInfoObj[key];
+      return acc;
+    }, {} as { [key: string]: any });
+  }
 }
